@@ -5,7 +5,7 @@ import { DEFAULT_EDUCATION, DEFAULT_EXPERIENCE } from "../dbService";
 
 export default function AboutSection({ hero, items = [] }) {
   const name = hero?.name || "Eka Wahyu Maulidan";
-  const bio = hero?.bio || "Sebagai mahasiswa Fakultas Ilmu Komputer Universitas Brawijaya, Aku berfokus pada pengembangan teknologi yang tidak hanya fungsional, tetapi juga menghadirkan pengalaman digital yang menarik dan berdampak.";
+  const bio = hero?.aboutBio || hero?.bio || "ยินดีต้อนรับเข้าสู่ว็บไซต์พอร์ตโฟลิโอและคลังเกียรติบัตรออนไลน์ของผม! ผมมีความสนใจเกี่ยวกับการพัฒนาเว็บแอปพลิเคชัน วิทยาการข้อมูล และเทคโนโลยีความปลอดภัย เว็บนี้รวบรวมผลงาน เกียรติบัตร และรางวัลที่ผมได้รับจากการเข้าร่วมแข่งขันและทำกิจกรรมต่าง ๆ";
   const resumeUrl = hero?.resumeUrl || "#";
   const imageUrl = hero?.aboutImageUrl || hero?.imageUrl || "";
 
@@ -119,7 +119,12 @@ export default function AboutSection({ hero, items = [] }) {
                   <div key={edu.id || idx} className="about-entry-card">
                     <div className="about-entry-icon-box edu-icon-box">
                       {edu.imageUrl ? (
-                        <img src={edu.imageUrl} alt={edu.institution} className="about-entry-custom-img" />
+                        <img 
+                          src={edu.imageUrl} 
+                          alt={edu.institution} 
+                          className="about-entry-custom-img" 
+                          style={{ width: "100%", height: "100%", maxWidth: "38px", maxHeight: "38px", objectFit: "contain" }}
+                        />
                       ) : (
                         <EduIcon size={22} />
                       )}
@@ -145,7 +150,12 @@ export default function AboutSection({ hero, items = [] }) {
                   <div key={exp.id || idx} className="about-entry-card">
                     <div className="about-entry-icon-box exp-icon-box">
                       {exp.imageUrl ? (
-                        <img src={exp.imageUrl} alt={exp.company} className="about-entry-custom-img" />
+                        <img 
+                          src={exp.imageUrl} 
+                          alt={exp.company} 
+                          className="about-entry-custom-img" 
+                          style={{ width: "100%", height: "100%", maxWidth: "38px", maxHeight: "38px", objectFit: "contain" }}
+                        />
                       ) : (
                         <ExpIcon size={22} />
                       )}

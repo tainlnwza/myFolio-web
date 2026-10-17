@@ -7,7 +7,7 @@ export default function HeroSection({ hero, contacts = [] }) {
   // ค่าเริ่มต้นสำหรับโครงสร้างและข้อความ Placeholder
   const statusText = hero?.status || "[ สถานะ เช่น พร้อมรับงาน / Open for Opportunities ]";
   const headline = hero?.headline || "[ Turning Ideas Into Reality ]";
-  const bio = hero?.bio || "[ ข้อความแนะนำตัวและคำอธิบายเป้าหมายของคุณ เล่าถึงความสนใจและสิ่งที่กำลังทำ เว้นไว้สำหรับใส่เนื้อหา ]";
+  const bio = hero?.homeBio || hero?.bio || "[ ข้อความแนะนำตัวและคำอธิบายเป้าหมายของคุณ เล่าถึงความสนใจและสิ่งที่กำลังทำ เว้นไว้สำหรับใส่เนื้อหา ]";
   const imageUrl = hero?.heroImageUrl || hero?.imageUrl || "";
 
   // รายการตำแหน่ง/บทบาท (Subtitles) สำหรับแสดงผลแบบ Typewriter Loop Animation

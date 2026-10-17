@@ -140,6 +140,8 @@ export const DEFAULT_HERO = {
   headline: "[ Turning Ideas Into Reality ]",
   status: "[ พร้อมรับงาน / Open for Opportunities ]",
   bio: "[ ข้อความแนะนำตัวและคำอธิบายเป้าหมายของคุณ เล่าถึงความสนใจและสิ่งที่กำลังทำ เว้นไว้สำหรับใส่เนื้อหา ]",
+  homeBio: "[ ข้อความแนะนำตัวสั้นๆ ประวัติย่อ สำหรับแสดงในหน้าแรก (Home) ]",
+  aboutBio: "[ รายละเอียดประวัติเพิ่มเติม เล่าถึงความสนใจ เป้าหมาย และประสบการณ์ สำหรับแสดงในหน้า About Me ]",
   heroImageUrl: "", // รูปภาพโปรไฟล์ส่วนแรก (Hero)
   aboutImageUrl: "", // รูปภาพโปรไฟล์ส่วน About Me
   imageUrl: "", // Legacy fallback
@@ -408,6 +410,8 @@ export const getHeroData = async () => {
   return {
     ...DEFAULT_HERO,
     ...rawData,
+    homeBio: rawData.homeBio || rawData.bio || DEFAULT_HERO.homeBio,
+    aboutBio: rawData.aboutBio || rawData.bio || DEFAULT_HERO.aboutBio,
     heroImageUrl: rawData.heroImageUrl || rawData.imageUrl || "",
     aboutImageUrl: rawData.aboutImageUrl || rawData.imageUrl || "",
     education: Array.isArray(rawData.education) && rawData.education.length > 0 
@@ -429,10 +433,14 @@ export const getHeroData = async () => {
 };
 
 export const updateHeroData = async (data) => {
+  const mergedData = {
+    ...data,
+    bio: data.homeBio || data.aboutBio || data.bio || ""
+  };
   if (isFirebaseConfigured) {
-    await setDoc(doc(db, "settings", "hero"), data);
+    await setDoc(doc(db, "settings", "hero"), mergedData);
   } else {
-    setLocal("folio_hero", data);
+    setLocal("folio_hero", mergedData);
   }
 };
 

@@ -1204,13 +1204,36 @@ section {
 }
 
 .about-entry-icon-box {
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  min-height: 48px;
+  max-height: 48px;
   flex-shrink: 0;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden !important;
+  position: relative;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.about-entry-custom-img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 38px !important;
+  max-height: 38px !important;
+  object-fit: contain !important;
+  display: block !important;
+  border-radius: 6px;
+  transition: transform 0.3s ease;
+}
+
+.about-entry-card:hover .about-entry-custom-img {
+  transform: scale(1.08);
 }
 
 .edu-icon-box {

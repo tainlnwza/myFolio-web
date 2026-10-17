@@ -356,7 +356,13 @@ const AdminPage = ({ setGlobalCustomCss }) => {
   const handleSaveHero = async (e) => {
     e.preventDefault();
     try {
-      await updateHeroData(hero);
+      const heroToSave = {
+        ...hero,
+        homeBio: hero.homeBio !== undefined ? hero.homeBio : (hero.bio || ""),
+        aboutBio: hero.aboutBio !== undefined ? hero.aboutBio : (hero.bio || "")
+      };
+      await updateHeroData(heroToSave);
+      setHero(heroToSave);
       triggerToast("💾 บันทึกข้อมูลแนะนำตัวเรียบร้อยแล้ว!");
     } catch (e) {
       console.error(e);
@@ -1376,14 +1382,36 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>ประวัติย่อ / รายละเอียดเพิ่มเติม (Bio)</label>
+                {/* แยกประวัติย่อหน้าแรก (Home Bio) และรายละเอียดประวัติเพิ่มเติม (About Me Bio) ตามข้อ 2 */}
+                <div className="form-group" style={{ padding: "1.25rem", borderRadius: "14px", background: "rgba(56, 189, 248, 0.04)", border: "1px solid rgba(56, 189, 248, 0.25)", marginBottom: "1.25rem" }}>
+                  <label style={{ fontWeight: 600, color: "#38bdf8", marginBottom: "0.4rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <DynamicIcon name="Home" size={18} /> 1. ประวัติย่อสำหรับหน้าแรก (Home Section Bio)
+                  </label>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+                    ข้อความแนะนำตัวสั้นๆ และเป้าหมาย จะแสดงอยู่ใต้หัวข้อและบทบาทในส่วนหน้าแรก (Home)
+                  </p>
+                  <textarea 
+                    className="form-control" 
+                    rows={3}
+                    value={hero.homeBio !== undefined ? hero.homeBio : (hero.bio || "")} 
+                    placeholder="ยินดีต้อนรับเข้าสู่ว็บไซต์พอร์ตโฟลิโอ... (แสดงเฉพาะหน้าแรก)"
+                    onChange={e => setHero(prev => ({ ...prev, homeBio: e.target.value }))} 
+                  />
+                </div>
+
+                <div className="form-group" style={{ padding: "1.25rem", borderRadius: "14px", background: "rgba(168, 85, 247, 0.04)", border: "1px solid rgba(168, 85, 247, 0.25)", marginBottom: "1.25rem" }}>
+                  <label style={{ fontWeight: 600, color: "#a855f7", marginBottom: "0.4rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <DynamicIcon name="User" size={18} /> 2. รายละเอียดประวัติเพิ่มเติม (About Me Section Bio)
+                  </label>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+                    ข้อความเล่าเรื่องราว ความเชี่ยวชาญ และความมุ่งมั่นเชิงลึก จะแสดงอยู่ทางขวาของรูปโปรไฟล์ในหน้า About Me
+                  </p>
                   <textarea 
                     className="form-control" 
                     rows={4}
-                    value={hero.bio || ""} 
-                    onChange={e => setHero(prev => ({ ...prev, bio: e.target.value }))} 
-                    required 
+                    value={hero.aboutBio !== undefined ? hero.aboutBio : (hero.bio || "")} 
+                    placeholder="เล่าประวัติเพิ่มเติม ความสนใจเฉพาะด้าน ผลงานและความเชี่ยวชาญ... (แสดงเฉพาะหน้า About Me)"
+                    onChange={e => setHero(prev => ({ ...prev, aboutBio: e.target.value }))} 
                   />
                 </div>
 
@@ -1480,7 +1508,7 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                           flexShrink: 0
                         }}>
                           {edu.imageUrl ? (
-                            <img src={edu.imageUrl} alt={edu.institution} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <img src={edu.imageUrl} alt={edu.institution} style={{ width: "100%", height: "100%", maxWidth: "38px", maxHeight: "38px", objectFit: "contain" }} />
                           ) : (
                             <DynamicIcon name={edu.icon || "GraduationCap"} size={22} />
                           )}
@@ -1539,7 +1567,7 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                           flexShrink: 0
                         }}>
                           {exp.imageUrl ? (
-                            <img src={exp.imageUrl} alt={exp.company} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <img src={exp.imageUrl} alt={exp.company} style={{ width: "100%", height: "100%", maxWidth: "38px", maxHeight: "38px", objectFit: "contain" }} />
                           ) : (
                             <DynamicIcon name={exp.icon || "Briefcase"} size={22} />
                           )}
@@ -2374,7 +2402,7 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                       flexShrink: 0
                     }}>
                       {timelineForm.imageUrl ? (
-                        <img src={timelineForm.imageUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img src={timelineForm.imageUrl} alt="Logo" style={{ width: "100%", height: "100%", maxWidth: "42px", maxHeight: "42px", objectFit: "contain" }} />
                       ) : (
                         <DynamicIcon name={timelineForm.icon || "HelpCircle"} size={24} style={{ color: "var(--text-muted)" }} />
                       )}
