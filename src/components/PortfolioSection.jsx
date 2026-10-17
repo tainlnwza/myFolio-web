@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import * as Icons from "lucide-react";
 import PlaceholderImage from "./PlaceholderImage";
 import { GithubIcon } from "./SocialIcons";
@@ -10,7 +11,8 @@ export default function PortfolioSection({
   categories = [], 
   techStack = [], 
   certificates = [], 
-  awards = [] 
+  awards = [],
+  onSelectProject
 }) {
   const [activeTab, setActiveTab] = useState("projects");
   const [selectedProject, setSelectedProject] = useState(null);
@@ -27,13 +29,34 @@ export default function PortfolioSection({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // แท็บ 4 หมวดหมู่ตามภาพแนบที่ 3: ไอคอนอยู่บน ข้อความอยู่ล่าง
+  // ล็อค Scroll ของหน้าจอเมื่อเปิด Lightbox ขยายภาพ
+  useEffect(() => {
+    if (lightboxImage) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [lightboxImage]);
+
+  // แท็บ 4 หมวดหมู่ตามภาพแนบที่ 2: ไอคอนอยู่บน ข้อความอยู่ล่าง กระจายเต็มความกว้าง
   const tabs = [
     { id: "projects", label: "Projects", icon: "Code2" },
     { id: "certificates", label: "Certificates", icon: "Award" },
     { id: "awards", label: "Awards", icon: "Trophy" },
     { id: "techstack", label: "Tech Stack", icon: "Boxes" }
   ];
+
+  // เปิดดูรายละเอียดโปรเจกต์ (แจ้งเตือนไปยัง Parent ให้เปิดหน้าแยก)
+  const handleOpenProject = (proj) => {
+    if (onSelectProject) {
+      onSelectProject(proj);
+    } else {
+      setSelectedProject(proj);
+    }
+  };
 
   // กรองข้อมูลโปรเจกต์
   const projectItems = items.filter(
@@ -110,7 +133,7 @@ export default function PortfolioSection({
   // Tech Stack Items (ดึงจาก Firestore/LocalStorage หรือใช้ค่าตั้งต้น)
   const displayTechStack = techStack && techStack.length > 0 ? techStack : DEFAULT_TECH_STACK;
 
-  // เมื่อผู้ใช้เลือกดูรายละเอียดโปรเจกต์ (เปิดหน้า Detail ตามภาพแนบที่ 2)
+  // Fallback เมื่อไม่ได้ส่ง onSelectProject มาจาก Parent
   if (selectedProject) {
     return (
       <section id="portfolio" className="portfolio-section">
@@ -138,7 +161,7 @@ export default function PortfolioSection({
         </h2>
       </div>
 
-      {/* Filter Tabs Navigation (ภาพแนบที่ 3) */}
+      {/* Filter Tabs Navigation (แถบ 4 ช่องเท่ากัน กระจายเต็มความกว้างตามภาพแนบที่ 2) */}
       <div className="portfolio-tabs-container scroll-reveal">
         <div className="portfolio-tabs-nav-modern">
           {tabs.map((tab) => {
@@ -150,13 +173,13 @@ export default function PortfolioSection({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`portfolio-tab-pill-btn ${isActive ? "active" : ""}`}
+                className={`portfolio-tab-btn-modern ${isActive ? "active" : ""}`}
                 id={`portfolio-tab-${tab.id}`}
               >
-                <div className="tab-pill-icon-wrap">
+                <div className="tab-modern-icon">
                   <IconComp size={20} />
                 </div>
-                <span className="tab-pill-label">{tab.label}</span>
+                <span className="tab-modern-label">{tab.label}</span>
               </button>
             );
           })}
@@ -175,7 +198,7 @@ export default function PortfolioSection({
                 {/* Thumbnail Image / Placeholder */}
                 <div 
                   className="project-thumb-container"
-                  onClick={() => setSelectedProject(proj)}
+                  onClick={() => handleOpenProject(proj)}
                   style={{ cursor: "pointer" }}
                 >
                   <PlaceholderImage
@@ -192,7 +215,7 @@ export default function PortfolioSection({
                       className="view-details-tag"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedProject(proj);
+                        handleOpenProject(proj);
                       }}
                     >
                       <Icons.Eye size={14} /> ดูรายละเอียด
@@ -205,7 +228,7 @@ export default function PortfolioSection({
                   {/* Title & Description */}
                   <h3 
                     className="project-card-title clickable-title"
-                    onClick={() => setSelectedProject(proj)}
+                    onClick={() => handleOpenProject(proj)}
                     style={{ cursor: "pointer" }}
                   >
                     {proj.title}
@@ -358,8 +381,8 @@ export default function PortfolioSection({
         </div>
       )}
 
-      {/* Lightbox Modal: ดูภาพขยาย กด x บริเวณมุมขวา เพื่อกลับสู่ขนาดปกติ (ตามภาพแนบที่ 5) */}
-      {lightboxImage && (
+      {/* Lightbox Modal: อยู่ Layer หน้าสุด (Portal to document.body) แสดงเฉพาะภาพและปุ่ม X ตามภาพแนบที่ 3 */}
+      {lightboxImage && typeof document !== "undefined" && createPortal(
         <div 
           className="lightbox-backdrop" 
           onClick={() => setLightboxImage(null)}
@@ -391,7 +414,8 @@ export default function PortfolioSection({
               className="lightbox-enlarged-img" 
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </section>

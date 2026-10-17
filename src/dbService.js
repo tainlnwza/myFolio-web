@@ -170,7 +170,8 @@ export const DEFAULT_ITEMS = [
     tags: ["[ React ]", "[ Tailwind CSS ]", "[ Node.js ]"],
     demoUrl: "https://example.com",
     githubUrl: "https://github.com",
-    imageUrl: "" // เว้นว่างไว้สำหรับใส่รูปภาพผลงาน
+    imageUrl: "", // เว้นว่างไว้สำหรับใส่รูปภาพผลงาน
+    detailImages: []
   },
   {
     id: "item-2",
@@ -180,7 +181,8 @@ export const DEFAULT_ITEMS = [
     tags: ["[ Next.js ]", "[ TypeScript ]", "[ PostgreSQL ]"],
     demoUrl: "https://example.com",
     githubUrl: "https://github.com",
-    imageUrl: ""
+    imageUrl: "",
+    detailImages: []
   },
   {
     id: "item-3",
@@ -462,10 +464,14 @@ export const getPortfolioItems = async () => {
 export const addPortfolioItem = async (item) => {
   const newId = "item-" + Date.now();
   const itemData = {
-    categoryId: item.categoryId,
-    title: item.title,
-    description: item.description,
-    imageUrl: item.imageUrl || ""
+    categoryId: item.categoryId || "cat-projects",
+    title: item.title || "",
+    description: item.description || "",
+    imageUrl: item.imageUrl || "",
+    detailImages: Array.isArray(item.detailImages) ? item.detailImages : [],
+    tags: Array.isArray(item.tags) ? item.tags : [],
+    demoUrl: item.demoUrl || "",
+    githubUrl: item.githubUrl || ""
   };
   
   if (isFirebaseConfigured) {
@@ -480,10 +486,14 @@ export const addPortfolioItem = async (item) => {
 
 export const updatePortfolioItem = async (id, item) => {
   const itemData = {
-    categoryId: item.categoryId,
-    title: item.title,
-    description: item.description,
-    imageUrl: item.imageUrl
+    categoryId: item.categoryId || "cat-projects",
+    title: item.title || "",
+    description: item.description || "",
+    imageUrl: item.imageUrl || "",
+    detailImages: Array.isArray(item.detailImages) ? item.detailImages : [],
+    tags: Array.isArray(item.tags) ? item.tags : [],
+    demoUrl: item.demoUrl || "",
+    githubUrl: item.githubUrl || ""
   };
   
   if (isFirebaseConfigured) {

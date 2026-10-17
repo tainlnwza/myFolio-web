@@ -11,17 +11,23 @@ const GithubIcon = ({ size = 18 }) => (
 
 export default function ProjectDetailView({ project, onBack }) {
   // Detail images สำหรับแสดงในหน้ารายละเอียด (ต่างจากรูปหน้าแรก สามารถเพิ่ม-ลดได้)
-  const detailImages = Array.isArray(project.detailImages) && project.detailImages.length > 0
-    ? project.detailImages
+  const rawDetailImages = Array.isArray(project.detailImages)
+    ? project.detailImages.filter(Boolean)
+    : (typeof project.detailImages === "string" && project.detailImages ? [project.detailImages] : []);
+  const detailImages = rawDetailImages.length > 0
+    ? rawDetailImages
     : (project.imageUrl ? [project.imageUrl] : []);
 
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
   if (!project) return null;
 
-  // รายการ Tags / Technologies Used
-  const tagsList = Array.isArray(project.tags) && project.tags.length > 0
+  // รายการ Tags / Technologies Used (รองรับทั้ง Array และ Comma-separated String)
+  const rawTags = Array.isArray(project.tags)
     ? project.tags
+    : (typeof project.tags === "string" ? project.tags.split(",").map(t => t.trim()).filter(Boolean) : []);
+  const tagsList = rawTags.length > 0
+    ? rawTags
     : ["[ HTML ]", "[ CSS ]", "[ JavaScript ]", "[ React ]"];
 
   return (

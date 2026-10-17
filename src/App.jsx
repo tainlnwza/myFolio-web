@@ -38,6 +38,7 @@ import PortfolioSection from "./components/PortfolioSection";
 import CoverflowCarousel from "./components/CoverflowCarousel";
 import ContactSection from "./components/ContactSection";
 import Footer from "./components/Footer";
+import ProjectDetailView from "./components/ProjectDetailView";
 
 // Helper สำหรับดึง Lucide Icon ตามชื่อสตริง
 const DynamicIcon = ({ name, size = 20, className = "" }) => {
@@ -55,6 +56,9 @@ const PublicPage = () => {
   const [items, setItems] = useState(DEFAULT_ITEMS);
   const [contacts, setContacts] = useState(DEFAULT_CONTACTS);
   const [activeSection, setActiveSection] = useState("home");
+  const [selectedProject, setSelectedProject] = useState(null);
+
+  const location = useLocation();
 
   useEffect(() => {
     let isMounted = true;
@@ -78,7 +82,7 @@ const PublicPage = () => {
     };
     loadAllData();
     return () => { isMounted = false; };
-  }, []);
+  }, [location.pathname]);
 
   // Scroll-Spy: อัปเดตแท็บใน Navbar อัตโนมัติตามตำแหน่งการเลื่อนหน้าจอ
   useEffect(() => {
@@ -135,6 +139,28 @@ const PublicPage = () => {
     );
   }
 
+  // เมื่อผู้ใช้กดดูรายละเอียดของโปรเจกต์ ให้แสดงผลเป็นหน้าเพจแยกเดี่ยวๆ (ไม่มี Hero, About, Coverflow, Contact หรือ Navbar ทับ) ตามข้อ 2
+  if (selectedProject) {
+    return (
+      <div className="portfolio-app-root project-detail-standalone-page">
+        <AmbientBackground />
+        <main className="portfolio-main-content standalone-detail-main">
+          <ProjectDetailView 
+            project={selectedProject} 
+            onBack={() => {
+              setSelectedProject(null);
+              window.scrollTo({ top: 0, behavior: "instant" });
+              setTimeout(() => {
+                const el = document.getElementById("portfolio");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }, 60);
+            }} 
+          />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="portfolio-app-root">
       {/* 1. Ambient Background (Aurora Mesh & Cyber Grid Glow) */}
@@ -161,6 +187,10 @@ const PublicPage = () => {
           techStack={hero.techStack} 
           certificates={hero.certificates}
           awards={hero.awards}
+          onSelectProject={(proj) => {
+            setSelectedProject(proj);
+            window.scrollTo({ top: 0, behavior: "instant" });
+          }}
         />
 
         {/* 6. Coverflow Carousel (3D Carousel สำหรับรูปภาพไฮไลท์ผลงาน/กิจกรรม) */}
@@ -2130,8 +2160,8 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                     ))}
                   </div>
 
-                  {/* ปุ่มอัปโหลดรูปภาพหน้ารายละเอียด */}
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                  {/* ปุ่มอัปโหลดรูปภาพหน้ารายละเอียด และช่องใส่ URL */}
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
                     <input 
                       type="file" 
                       accept="image/*" 
@@ -2158,8 +2188,47 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                       onClick={() => document.getElementById("detail-img-file-input").click()}
                       style={{ fontSize: "0.85rem" }}
                     >
-                      <DynamicIcon name="Plus" size={14} /> อัปโหลดรูปภาพหน้ารายละเอียดเพิ่ม
+                      <DynamicIcon name="UploadCloud" size={14} /> อัปโหลดไฟล์ภาพ
                     </button>
+
+                    <div style={{ display: "flex", gap: "0.4rem", flex: 1, minWidth: "220px" }}>
+                      <input 
+                        type="url" 
+                        id="detail-img-url-input"
+                        className="form-control" 
+                        placeholder="หรือวาง URL รูปภาพ (https://...)" 
+                        style={{ fontSize: "0.85rem", padding: "0.4rem 0.6rem" }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const val = e.target.value.trim();
+                            if (val) {
+                              setItemForm(prev => ({ ...prev, detailImages: [...(prev.detailImages || []), val] }));
+                              e.target.value = "";
+                              triggerToast("✅ เพิ่มรูปภาพหน้ารายละเอียดแล้ว!");
+                            }
+                          }
+                        }}
+                      />
+                      <button 
+                        type="button" 
+                        className="btn btn-secondary"
+                        style={{ fontSize: "0.85rem", whiteSpace: "nowrap" }}
+                        onClick={() => {
+                          const inputEl = document.getElementById("detail-img-url-input");
+                          const val = inputEl ? inputEl.value.trim() : "";
+                          if (val) {
+                            setItemForm(prev => ({ ...prev, detailImages: [...(prev.detailImages || []), val] }));
+                            inputEl.value = "";
+                            triggerToast("✅ เพิ่มรูปภาพหน้ารายละเอียดแล้ว!");
+                          } else {
+                            triggerToast("⚠️ กรุณาวาง URL รูปภาพก่อนกดเพิ่ม");
+                          }
+                        }}
+                      >
+                        + เพิ่มด้วย URL
+                      </button>
+                    </div>
                   </div>
                 </div>
 
