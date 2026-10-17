@@ -531,6 +531,31 @@ section {
   aspect-ratio: 4 / 5;
 }
 
+.aspect-auto {
+  aspect-ratio: auto;
+}
+
+.placeholder-img-wrapper.aspect-auto {
+  aspect-ratio: auto;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.placeholder-img-wrapper.aspect-auto .placeholder-actual-img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
 /* PDF Preview Document Container */
 .pdf-preview-container {
   display: flex;
@@ -815,8 +840,21 @@ section {
   }
 }
 
+.hero-card-container.has-image {
+  max-width: 480px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .hero-profile-card {
   position: relative;
+  animation: float-hero-card 6s ease-in-out infinite;
+}
+
+/* กรณีกล่องว่าง (Placeholder) ก่อนอัปโหลดรูป ให้แสดงกรอบกล่องโค้งมนตามโครงสร้างเดิม */
+.hero-profile-card.hero-is-placeholder,
+.hero-profile-card:not(.hero-has-image) {
   border-radius: 28px;
   overflow: hidden;
   background: rgba(15, 23, 42, 0.75);
@@ -824,7 +862,47 @@ section {
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-  animation: float-hero-card 6s ease-in-out infinite;
+}
+
+/* กรณีมีรูปภาพโปรไฟล์ (รองรับ PNG โปร่งใส และปรับขนาดตามภาพที่แนบมาเป็นตัวกำหนด) */
+.hero-profile-card.hero-has-image {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: auto;
+  height: auto;
+}
+
+.hero-profile-card.hero-has-image .hero-main-avatar {
+  width: auto;
+  height: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent !important;
+}
+
+.hero-profile-card.hero-has-image img.placeholder-actual-img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 520px;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 35px rgba(0, 0, 0, 0.75));
+  border-radius: 16px;
+  transition: transform 0.4s ease, filter 0.4s ease;
+}
+
+.hero-profile-card.hero-has-image:hover img.placeholder-actual-img {
+  transform: scale(1.02);
+  filter: drop-shadow(0 25px 45px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 35px rgba(59, 130, 246, 0.3));
 }
 
 @keyframes float-hero-card {
@@ -975,12 +1053,58 @@ section {
 .about-portrait-card-frame {
   width: 100%;
   max-width: 320px;
+}
+
+/* เมื่อยังไม่มีรูป ให้แสดงกรอบการ์ดสำหรับ Placeholder */
+.about-portrait-card-frame.about-is-placeholder,
+.about-portrait-card-frame:not(.about-has-image) {
   border-radius: 24px;
   overflow: hidden;
   background: rgba(12, 18, 32, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(12px);
+}
+
+/* เมื่อมีรูปภาพแล้ว ให้รองรับ PNG โปร่งใส และกำหนดขนาดตามภาพที่แนบมา */
+.about-portrait-card-frame.about-has-image {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  width: auto;
+  max-width: 360px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.about-portrait-card-frame.about-has-image .about-portrait-img {
+  width: auto;
+  height: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent !important;
+}
+
+.about-portrait-card-frame.about-has-image img.placeholder-actual-img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.75));
+  border-radius: 16px;
+  transition: transform 0.4s ease, filter 0.4s ease;
+}
+
+.about-portrait-card-frame.about-has-image:hover img.placeholder-actual-img {
+  transform: scale(1.02);
+  filter: drop-shadow(0 22px 40px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 30px rgba(168, 85, 247, 0.3));
 }
 
 .about-portrait-img {
@@ -2406,16 +2530,24 @@ section {
   border-radius: var(--radius-md);
   border: 1px dashed rgba(255, 255, 255, 0.2);
   overflow: hidden;
-  background: #0f172a;
+  background: #0b1120;
+  background-image: 
+    linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%), 
+    linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.05) 75%), 
+    linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.05) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 4px;
 }
 
 .image-preview-box img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 /* Buttons */

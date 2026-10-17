@@ -302,14 +302,31 @@ const ensureInitialized = () => {
    ========================================================================== */
 const compressImageToBase64 = (file) => {
   return new Promise((resolve, reject) => {
+    // 1. ตรวจสอบประเภทไฟล์
+    const isPng = file.type === "image/png" || file.name?.toLowerCase().endsWith(".png");
+    const isWebp = file.type === "image/webp" || file.name?.toLowerCase().endsWith(".webp");
+    const isSvg = file.type === "image/svg+xml" || file.name?.toLowerCase().endsWith(".svg");
+    const isGif = file.type === "image/gif" || file.name?.toLowerCase().endsWith(".gif");
+
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
+      // สำหรับ SVG หรือ GIF ให้อ่านเป็น Data URL ตรงๆ เพื่อรักษาเวกเตอร์และความโปร่งใส/แอนิเมชัน
+      if (isSvg || isGif) {
+        return resolve(event.target.result);
+      }
+
       const img = new Image();
       img.src = event.target.result;
       img.onload = () => {
+        // หากเป็นไฟล์ PNG หรือ WebP ที่ขนาดไฟล์ไม่เกิน 650KB และขนาดภาพไม่เกิน 1600px
+        // ให้ใช้ไฟล์เดิมได้ทันทีเพื่อรักษาความโปร่งใส (Alpha Transparency) และความคมชัด 100%
+        if ((isPng || isWebp) && file.size < 650 * 1024 && img.width <= 1600 && img.height <= 1600) {
+          return resolve(event.target.result);
+        }
+
         const canvas = document.createElement("canvas");
-        // ปรับความละเอียดภาพให้คมชัดระดับ Full HD (สูงสุด 1600px) ไม่ลดทอนจนเบลอ
+        // ปรับความละเอียดภาพสูงสุด 1600px
         const MAX_DIMENSION = 1600;
         let width = img.width;
         let height = img.height;
@@ -328,11 +345,37 @@ const compressImageToBase64 = (file) => {
         canvas.height = height;
 
         const ctx = canvas.getContext("2d");
+        // ล้าง Canvas ให้โปร่งใส 100% (Alpha: 0) ก่อนวาด เพื่อไม่ให้พื้นหลังกลายเป็นสีดำ
+        ctx.clearRect(0, 0, width, height);
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
         ctx.drawImage(img, 0, 0, width, height);
 
-        // บันทึกด้วยคุณภาพสูง 88% (0.88) เพื่อให้ภาพคมชัดระดับ HD และขนาดไฟล์ยังกะทัดรัด
+        if (isPng) {
+          // บันทึกเป็น image/png เพื่อรักษาพื้นหลังโปร่งใส 100%
+          let compressedBase64 = canvas.toDataURL("image/png");
+          // หากขนาดใหญ่เกินไปสำหรับเอกสาร Firestore (> 850KB = ~850,000 ตัวอักษร)
+          // ให้แปลงเป็น WebP คุณภาพสูง ซึ่งรองรับ Transparency เช่นกัน แต่ขนาดไฟล์กะทัดรัดกว่า
+          if (compressedBase64.length > 850000) {
+            try {
+              const webpData = canvas.toDataURL("image/webp", 0.92);
+              if (webpData.startsWith("data:image/webp") && webpData.length < compressedBase64.length) {
+                compressedBase64 = webpData;
+              }
+            } catch (err) {
+              console.warn("WebP fallback to PNG:", err);
+            }
+          }
+          return resolve(compressedBase64);
+        }
+
+        if (isWebp) {
+          // บันทึกเป็น image/webp เพื่อรักษาพื้นหลังโปร่งใส
+          const compressedBase64 = canvas.toDataURL("image/webp", 0.90);
+          return resolve(compressedBase64);
+        }
+
+        // กรณีรูปภาพทั่วไป (JPG / JPEG) บันทึกด้วยคุณภาพ 88%
         const compressedBase64 = canvas.toDataURL("image/jpeg", 0.88);
         resolve(compressedBase64);
       };

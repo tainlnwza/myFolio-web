@@ -77,15 +77,15 @@ export default function AboutSection({ hero, items = [] }) {
             </div>
           </div>
 
-          {/* Center Column: Portrait Image Showcase */}
+          {/* Center Column: Portrait Image Showcase (ปรับขนาดตามภาพจริง และรองรับ PNG โปร่งใส) */}
           <div className="about-hero-photo-col">
-            <div className="about-portrait-card-frame">
+            <div className={`about-portrait-card-frame ${imageUrl ? "about-has-image" : "about-is-placeholder"}`}>
               <PlaceholderImage
                 src={imageUrl}
-                aspect="4/5"
+                aspect="auto"
                 icon="User"
                 label="[ รูปภาพโปรไฟล์ของคุณ ]"
-                hint="ขนาดแนะนำ 4:5"
+                hint="รองรับไฟล์ PNG โปร่งใส หรือ JPG"
                 className="about-portrait-img"
               />
             </div>

@@ -131,21 +131,21 @@ export default function HeroSection({ hero, contacts = [] }) {
 
         </div>
 
-        {/* Right Column: Hero Visual Showcase Card */}
+        {/* Right Column: Hero Visual Showcase (ปรับขนาดตามภาพที่แนบมา และรองรับ PNG โปร่งใส) */}
         <div className="hero-right-column">
-          <div className="hero-card-container">
+          <div className={`hero-card-container ${imageUrl ? "has-image" : "is-empty"}`}>
             
             {/* Glowing Backdrop */}
             <div className="hero-card-glow"></div>
 
             {/* Card Frame with Profile Image or Placeholder */}
-            <div className="hero-profile-card">
+            <div className={`hero-profile-card ${imageUrl ? "hero-has-image" : "hero-is-placeholder"}`}>
               <PlaceholderImage
                 src={imageUrl}
-                aspect="4/5"
+                aspect="auto"
                 icon="User"
                 label="[ รูปภาพโปรไฟล์ของคุณ ]"
-                hint="สามารถอัปโหลดรูปภาพได้ที่ระบบหลังบ้าน"
+                hint="รองรับไฟล์ PNG โปร่งใส, JPG, WEBP"
                 className="hero-main-avatar"
               />
             </div>

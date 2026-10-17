@@ -19,13 +19,16 @@ export default function PlaceholderImage({
 }) {
   const IconComponent = Icons[icon] || Icons.Image;
 
-  // คำนวณ aspect-ratio class
-  const aspectClass = {
-    "16/9": "aspect-16-9",
-    "1/1": "aspect-1-1",
-    "4/3": "aspect-4-3",
-    "4/5": "aspect-4-5"
-  }[aspect] || "aspect-16-9";
+  // คำนวณ aspect-ratio class (รองรับ "auto" เพื่อให้ขนาดภาพที่แนบมาเป็นตัวกำหนดขนาดจริง)
+  const aspectClass = aspect === "auto" 
+    ? "aspect-auto" 
+    : ({
+        "16/9": "aspect-16-9",
+        "1/1": "aspect-1-1",
+        "4/3": "aspect-4-3",
+        "4/5": "aspect-4-5",
+        "auto": "aspect-auto"
+      }[aspect] || "aspect-16-9");
 
   if (src) {
     if (isPdf) {

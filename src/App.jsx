@@ -1207,7 +1207,7 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                           </button>
                         )}
                         <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
-                          แนะนำอัตราส่วน 4:5 หรือ 1:1
+                          รองรับไฟล์ PNG โปร่งใส, JPG, WEBP — ปรับขนาดตามภาพที่แนบจริงอัตโนมัติ
                         </p>
                       </div>
                     </div>
@@ -1254,7 +1254,7 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                           </button>
                         )}
                         <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
-                          แนะนำอัตราส่วน 4:5
+                          รองรับไฟล์ PNG โปร่งใส, JPG, WEBP — ปรับขนาดตามภาพที่แนบจริงอัตโนมัติ
                         </p>
                       </div>
                     </div>
