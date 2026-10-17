@@ -143,9 +143,9 @@ export const DEFAULT_HERO = {
   heroImageUrl: "", // รูปภาพโปรไฟล์ส่วนแรก (Hero)
   aboutImageUrl: "", // รูปภาพโปรไฟล์ส่วน About Me
   imageUrl: "", // Legacy fallback
-  yearsExp: "[ 1+ ]",
-  projectsCount: "[ 10+ ]",
-  awardsCount: "[ 5+ ]",
+  yearsExp: "1+",
+  projectsCount: "0",
+  awardsCount: "0",
   resumeUrl: "#",
   education: DEFAULT_EDUCATION,
   experience: DEFAULT_EXPERIENCE,

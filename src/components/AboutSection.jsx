@@ -9,18 +9,23 @@ export default function AboutSection({ hero, items = [] }) {
   const resumeUrl = hero?.resumeUrl || "#";
   const imageUrl = hero?.aboutImageUrl || hero?.imageUrl || "";
 
-  // คำนวณจำนวนผลงานจาก items หรือใช้ค่าเริ่มต้นจาก hero
-  const projCount = items.length > 0 
-    ? items.filter(i => (i.categoryId || "").toLowerCase().includes("proj")).length || hero?.projectsCount || "6"
-    : hero?.projectsCount || "6";
+  // คำนวณจำนวนผลงานจากข้อมูลที่เพิ่มเข้าไปจริงๆ (อ้างอิงจากรายการจริงในระบบตามข้อ 1)
+  const projectItems = items.filter(
+    (item) => item.categoryId === "cat-projects" || item.category === "projects" || (!item.categoryId?.includes("cert") && !item.categoryId?.includes("award"))
+  );
+  const projCount = projectItems.length;
 
-  const certCount = items.length > 0 
-    ? items.filter(i => (i.categoryId || "").toLowerCase().includes("cert")).length || hero?.certificatesCount || "6"
-    : hero?.certificatesCount || "6";
+  const uploadedCerts = items.filter(
+    (item) => (item.categoryId === "cat-certificates" || item.category === "certificates") && (item.imageUrl || item.file)
+  );
+  const heroCerts = Array.isArray(hero?.certificates) ? hero.certificates.filter(c => c.imageUrl || c.src || c.url) : [];
+  const certCount = uploadedCerts.length + heroCerts.length;
 
-  const awardCount = items.length > 0 
-    ? items.filter(i => (i.categoryId || "").toLowerCase().includes("award")).length || hero?.awardsCount || "4"
-    : hero?.awardsCount || "4";
+  const uploadedAwards = items.filter(
+    (item) => (item.categoryId === "cat-awards" || item.category === "awards") && (item.imageUrl || item.file)
+  );
+  const heroAwards = Array.isArray(hero?.awards) ? hero.awards.filter(a => a.imageUrl || a.src || a.url) : [];
+  const awardCount = uploadedAwards.length + heroAwards.length;
 
   // แบ่งบรรทัดชื่อแบบสวยงามตามสไตล์ภาพแนบที่ 4
   const nameParts = name.trim().split(" ");
@@ -158,51 +163,51 @@ export default function AboutSection({ hero, items = [] }) {
 
         </div>
 
-        {/* 4. Bottom Block: 3 Full-Width Highlight Stat Cards (Projects, Certificates, Awards) */}
+        {/* 4. Bottom Block: 3 Highlight Stat Cards - ขยายขนาดตามข้อ 1 และนับจำนวนจากจริง */}
         <div className="about-stats-row scroll-reveal">
           
           {/* Card 1: Projects */}
-          <a href="#portfolio" className="about-stat-banner-card">
+          <a href="#portfolio" className="about-stat-banner-card" title="คลิกเพื่อไปยังส่วนผลงาน Projects">
             <div className="stat-banner-left">
               <div className="stat-banner-tag">
-                <Icons.Code2 size={16} />
+                <Icons.Code2 size={22} className="stat-banner-tag-icon" />
                 <span>PROJECTS</span>
               </div>
               <p className="stat-banner-desc">innovative solutions crafted</p>
             </div>
             <div className="stat-banner-right">
               <span className="stat-banner-number">{projCount}</span>
-              <Icons.ArrowUpRight size={16} className="stat-banner-arrow" />
+              <Icons.ArrowUpRight size={22} className="stat-banner-arrow" />
             </div>
           </a>
 
           {/* Card 2: Certificates */}
-          <a href="#portfolio" className="about-stat-banner-card">
+          <a href="#portfolio" className="about-stat-banner-card" title="คลิกเพื่อไปยังส่วน Certificates">
             <div className="stat-banner-left">
               <div className="stat-banner-tag">
-                <Icons.Award size={16} />
+                <Icons.Award size={22} className="stat-banner-tag-icon" />
                 <span>CERTIFICATES</span>
               </div>
               <p className="stat-banner-desc">skills validated</p>
             </div>
             <div className="stat-banner-right">
               <span className="stat-banner-number">{certCount}</span>
-              <Icons.ArrowUpRight size={16} className="stat-banner-arrow" />
+              <Icons.ArrowUpRight size={22} className="stat-banner-arrow" />
             </div>
           </a>
 
           {/* Card 3: Awards */}
-          <a href="#portfolio" className="about-stat-banner-card">
+          <a href="#portfolio" className="about-stat-banner-card" title="คลิกเพื่อไปยังส่วน Awards">
             <div className="stat-banner-left">
               <div className="stat-banner-tag">
-                <Icons.Trophy size={16} />
+                <Icons.Trophy size={22} className="stat-banner-tag-icon" />
                 <span>AWARDS</span>
               </div>
               <p className="stat-banner-desc">achievements earned</p>
             </div>
             <div className="stat-banner-right">
               <span className="stat-banner-number">{awardCount}</span>
-              <Icons.ArrowUpRight size={16} className="stat-banner-arrow" />
+              <Icons.ArrowUpRight size={22} className="stat-banner-arrow" />
             </div>
           </a>
 

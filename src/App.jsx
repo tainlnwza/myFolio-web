@@ -81,6 +81,7 @@ const PublicPage = () => {
       }
     };
     loadAllData();
+    document.title = "MyFolio";
     return () => { isMounted = false; };
   }, [location.pathname]);
 
