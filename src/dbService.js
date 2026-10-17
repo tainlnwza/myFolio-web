@@ -18,7 +18,9 @@ import {
   SUPABASE_PROJECT_ID,
   SUPABASE_BUCKET_NAME,
   SUPABASE_FOLDER_CERTS_AWARDS, 
-  SUPABASE_FOLDER_ACTIVITIES 
+  SUPABASE_FOLDER_ACTIVITIES,
+  SUPABASE_FOLDER_PROJECTS,
+  SUPABASE_FOLDER_GALLERY
 } from "./supabase";
 
 // ข้อมูลการศึกษาเริ่มต้น (Default Education)
@@ -891,7 +893,9 @@ export {
   SUPABASE_PROJECT_ID,
   SUPABASE_BUCKET_NAME,
   SUPABASE_FOLDER_CERTS_AWARDS,
-  SUPABASE_FOLDER_ACTIVITIES
+  SUPABASE_FOLDER_ACTIVITIES,
+  SUPABASE_FOLDER_PROJECTS,
+  SUPABASE_FOLDER_GALLERY
 };
 
 /**
@@ -918,4 +922,27 @@ export const uploadActivityFile = async (file) => {
   }
   throw new Error("ยังไม่ได้เชื่อมต่อ Supabase Anon Key! กรุณากรอก Anon Key ในเมนู 'ตั้งค่า Supabase Storage' ของหน้า Control Center หรือใน .env");
 };
+
+/**
+ * อัปโหลดรูปภาพโปรเจกต์ (Cover และ Detail Images) เข้าสู่ Supabase Storage (Folder: 'project pic')
+ */
+export const uploadProjectFile = async (file) => {
+  if (!file) return "";
+  if (isSupabaseConfigured()) {
+    return await uploadFileToSupabase(file, SUPABASE_FOLDER_PROJECTS);
+  }
+  throw new Error("ยังไม่ได้เชื่อมต่อ Supabase Anon Key! กรุณากรอก Anon Key ในเมนู 'ตั้งค่า Supabase Storage' ของหน้า Control Center หรือใน .env");
+};
+
+/**
+ * อัปโหลดรูปภาพแกลเลอรี Coverflow Carousel เข้าสู่ Supabase Storage (Folder: 'gallery pic')
+ */
+export const uploadGalleryFile = async (file) => {
+  if (!file) return "";
+  if (isSupabaseConfigured()) {
+    return await uploadFileToSupabase(file, SUPABASE_FOLDER_GALLERY);
+  }
+  throw new Error("ยังไม่ได้เชื่อมต่อ Supabase Anon Key! กรุณากรอก Anon Key ในเมนู 'ตั้งค่า Supabase Storage' ของหน้า Control Center หรือใน .env");
+};
+
 

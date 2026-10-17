@@ -28,6 +28,8 @@ import {
   uploadMedia,
   uploadCertAwardFile,
   uploadActivityFile,
+  uploadProjectFile,
+  uploadGalleryFile,
   isSupabaseConfigured,
   setSupabaseAnonKey,
   getSupabaseAnonKey,
@@ -501,14 +503,19 @@ const AdminPage = ({ setGlobalCustomCss }) => {
   const handleGalleryImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      triggerToast("⏳ กำลังประมวลผลรูปภาพ...");
+      if (!isSupabaseConfigured()) {
+        triggerToast("⚠️ ยังไม่ได้เชื่อมต่อ Supabase! กำลังนำคุณไปยังแท็บ 'ตั้งค่า Supabase Storage' เพื่อกรอก Anon Key");
+        setActiveTab("supabase");
+        return;
+      }
+      triggerToast("⏳ กำลังอัปโหลดรูปภาพแกลเลอรีเข้า Supabase Storage (gallery pic)...");
       try {
-        const url = await uploadImage(file);
-        setGalleryForm(prev => ({ ...prev, imageUrl: url, file }));
-        triggerToast("✅ เตรียมรูปภาพเรียบร้อย!");
+        const url = await uploadGalleryFile(file);
+        setGalleryForm(prev => ({ ...prev, imageUrl: url, file: null }));
+        triggerToast("🎉 อัปโหลดรูปภาพเข้า Supabase เรียบร้อย!");
       } catch (err) {
         console.error(err);
-        triggerToast("❌ ไม่สามารถประมวลผลรูปภาพได้");
+        triggerToast(`❌ ${err.message || "อัปโหลดรูปภาพไม่สำเร็จ"}`);
       }
     }
   };
@@ -1104,15 +1111,27 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     setShowItemModal(true);
   };
 
-  const handleItemFileChange = (e) => {
+  const handleItemFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setItemForm(prev => ({ ...prev, file }));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setItemForm(prev => ({ ...prev, imageUrl: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      if (isSupabaseConfigured()) {
+        triggerToast("⏳ กำลังอัปโหลดรูปภาพผลงานเข้า Supabase Storage (project pic)...");
+        try {
+          const url = await uploadProjectFile(file);
+          setItemForm(prev => ({ ...prev, imageUrl: url, file: null }));
+          triggerToast("🎉 อัปโหลดรูปภาพผลงานเข้า Supabase สำเร็จ!");
+        } catch (err) {
+          console.error(err);
+          triggerToast(`❌ ${err.message || "อัปโหลดไม่สำเร็จ"}`);
+        }
+      } else {
+        setItemForm(prev => ({ ...prev, file }));
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setItemForm(prev => ({ ...prev, imageUrl: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -1123,7 +1142,11 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     try {
       let finalImageUrl = itemForm.imageUrl;
       if (itemForm.file) {
-        finalImageUrl = await uploadImage(itemForm.file);
+        if (isSupabaseConfigured()) {
+          finalImageUrl = await uploadProjectFile(itemForm.file);
+        } else {
+          finalImageUrl = await uploadImage(itemForm.file);
+        }
       }
       
       const tagsArray = itemForm.tags
@@ -2264,6 +2287,12 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                     <span style={{ color: "var(--text-muted)" }}>Bucket Name:</span>
                     <span style={{ fontFamily: "monospace", color: "#eab308" }}>{SUPABASE_BUCKET_NAME}</span>
 
+                    <span style={{ color: "var(--text-muted)" }}>Project Pic Folder:</span>
+                    <span style={{ fontFamily: "monospace", color: "#38bdf8" }}>database myfolio/project pic/</span>
+
+                    <span style={{ color: "var(--text-muted)" }}>Gallery Pic Folder:</span>
+                    <span style={{ fontFamily: "monospace", color: "#ec4899" }}>database myfolio/gallery pic/</span>
+
                     <span style={{ color: "var(--text-muted)" }}>Cer & Award Folder:</span>
                     <span style={{ fontFamily: "monospace", color: "#10b981" }}>database myfolio/cer & award/</span>
 
@@ -2395,6 +2424,16 @@ const AdminPage = ({ setGlobalCustomCss }) => {
             </div>
             <form onSubmit={handleSaveItem}>
               <div className="modal-body">
+                {isSupabaseConfigured() ? (
+                  <div style={{ padding: "0.5rem 0.75rem", borderRadius: "8px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#6ee7b7", fontSize: "0.8rem", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <DynamicIcon name="CheckCircle" size={15} />
+                    <span>รูปภาพปกและรูปภาพรายละเอียดจะถูกบันทึกเข้า Supabase Storage (<code>database myfolio/project pic/</code>)</span>
+                  </div>
+                ) : (
+                  <div style={{ padding: "0.6rem 0.75rem", borderRadius: "8px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", fontSize: "0.8rem", marginBottom: "1rem" }}>
+                    ⚠️ <b>ยังไม่ได้เชื่อมต่อ Supabase Storage:</b> รูปภาพจะถูกบีบอัดเก็บในฐานข้อมูลปกติ
+                  </div>
+                )}
                 <div className="form-group">
                   <label>หมวดหมู่</label>
                   <select 
@@ -2514,13 +2553,17 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                       onChange={async (e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          triggerToast("⏳ กำลังอัปโหลดรูปภาพหน้ารายละเอียด...");
+                          if (!isSupabaseConfigured()) {
+                            triggerToast("⚠️ ยังไม่ได้เชื่อมต่อ Supabase Storage");
+                            return;
+                          }
+                          triggerToast("⏳ กำลังอัปโหลดรูปภาพหน้ารายละเอียดเข้า Supabase (project pic)...");
                           try {
-                            const url = await uploadImage(file);
+                            const url = await uploadProjectFile(file);
                             setItemForm(prev => ({ ...prev, detailImages: [...(prev.detailImages || []), url] }));
                             triggerToast("✅ เพิ่มรูปภาพหน้ารายละเอียดแล้ว!");
                           } catch (err) {
-                            triggerToast("❌ อัปโหลดรูปภาพไม่สำเร็จ");
+                            triggerToast(`❌ ${err.message || "อัปโหลดรูปภาพไม่สำเร็จ"}`);
                           }
                           e.target.value = "";
                         }
@@ -2887,6 +2930,23 @@ const AdminPage = ({ setGlobalCustomCss }) => {
             </div>
             <form onSubmit={handleSaveGallery}>
               <div className="modal-body">
+                {isSupabaseConfigured() ? (
+                  <div style={{ padding: "0.5rem 0.75rem", borderRadius: "8px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#6ee7b7", fontSize: "0.8rem", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <DynamicIcon name="CheckCircle" size={15} />
+                    <span>รูปภาพจะถูกบันทึกเข้า Supabase Storage (<code>database myfolio/gallery pic/</code>)</span>
+                  </div>
+                ) : (
+                  <div style={{ padding: "0.6rem 0.75rem", borderRadius: "8px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", fontSize: "0.8rem", marginBottom: "1rem" }}>
+                    ⚠️ <b>ยังไม่ได้เชื่อมต่อ Supabase Storage:</b>{" "}
+                    <button 
+                      type="button" 
+                      onClick={() => { setShowGalleryModal(false); setActiveTab("supabase"); }}
+                      style={{ background: "none", border: "none", color: "#38bdf8", textDecoration: "underline", cursor: "pointer", padding: 0, fontWeight: "bold" }}
+                    >
+                      คลิกที่นี่เพื่อไปใส่ Supabase Anon Key
+                    </button>
+                  </div>
+                )}
                 <div className="form-group">
                   <label>ชื่อคำอธิบายภาพ (Title / Caption)</label>
                   <input
@@ -2944,8 +3004,8 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                           ลบรูป
                         </button>
                       )}
-                      <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0.35rem 0 0 0" }}>
-                        ระบบบีบอัดภาพ HD อัตโนมัติ ปลอดภัยต่อโควต้าฟรี
+                      <p style={{ fontSize: "0.75rem", color: "#10b981", margin: "0.35rem 0 0 0" }}>
+                        ☁️ บันทึกรูปภาพลง Supabase Storage (โฟลเดอร์ gallery pic) อัตโนมัติ
                       </p>
                     </div>
                   </div>
