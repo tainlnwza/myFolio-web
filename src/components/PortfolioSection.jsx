@@ -5,6 +5,7 @@ import PlaceholderImage from "./PlaceholderImage";
 import { GithubIcon } from "./SocialIcons";
 import { 
   DEFAULT_TECH_STACK, 
+  DEFAULT_CERTS_AND_AWARDS,
   DEFAULT_ACTIVITIES,
   DEFAULT_CERTIFICATES, 
   DEFAULT_AWARDS,
@@ -18,6 +19,7 @@ export default function PortfolioSection({
   items = [], 
   categories = [], 
   techStack = [], 
+  certsAndAwards = [],
   activities = [],
   certificates = [], 
   awards = [],
@@ -50,9 +52,10 @@ export default function PortfolioSection({
     };
   }, [lightboxMedia]);
 
-  // รวม cer กับ award เป็น Activities: 3 หมวดหมู่ (Projects, Activities, Tech Stack)
+  // 4 หมวดหมู่: Projects, Certificates & Awards (เฉพาะภาพ), Activities (ภาพและคลิป), Tech Stack
   const tabs = [
     { id: "projects", label: "Projects", icon: "Code2" },
+    { id: "certs-awards", label: "Certificates & Awards", icon: "Award" },
     { id: "activities", label: "Activities", icon: "Sparkles" },
     { id: "techstack", label: "Tech Stack", icon: "Boxes" }
   ];
@@ -68,7 +71,7 @@ export default function PortfolioSection({
 
   // กรองข้อมูลโปรเจกต์
   const projectItems = items.filter(
-    (item) => item.categoryId === "cat-projects" || item.category === "projects" || (!item.categoryId?.includes("cert") && !item.categoryId?.includes("award"))
+    (item) => item.categoryId === "cat-projects" || item.category === "projects" || (!item.categoryId?.includes("cert") && !item.categoryId?.includes("award") && !item.categoryId?.includes("act"))
   );
 
   const placeholderProjects = projectItems.length > 0 ? projectItems : [
@@ -112,7 +115,30 @@ export default function PortfolioSection({
     return url;
   };
 
-  // รวมรายการ Activities (ผลงานยามว่าง เช่น อนิเมชั่น คลิป วิดีโอ รูปภาพ)
+  // 1. รวมรายการ Certificates & Awards เข้าด้วยกัน (เพิ่มได้เฉพาะรูปภาพเกียรติบัตร/รางวัล)
+  const uploadedCertsAwards = items.filter(
+    (item) => (item.categoryId === "cat-certs-awards" || item.categoryId === "cat-certificates" || item.categoryId === "cat-awards" || item.category === "certificates" || item.category === "awards") && (item.imageUrl || item.url)
+  );
+  const heroCertsAwards = Array.isArray(certsAndAwards) && certsAndAwards.length > 0
+    ? certsAndAwards
+    : (
+        ((Array.isArray(certificates) && certificates.length > 0) || (Array.isArray(awards) && awards.length > 0))
+          ? [
+              ...(Array.isArray(certificates) ? certificates : []),
+              ...(Array.isArray(awards) ? awards : [])
+            ]
+          : DEFAULT_CERTS_AND_AWARDS
+      );
+  const combinedCertsAwards = [
+    ...(heroCertsAwards.length > 0 ? heroCertsAwards : DEFAULT_CERTS_AND_AWARDS),
+    ...uploadedCertsAwards
+  ];
+  const displayCertsAwards = combinedCertsAwards.map(c => ({
+    ...c,
+    imageUrl: sanitizeImg(c.imageUrl || c.src || c.url)
+  })).filter(c => Boolean(c.imageUrl));
+
+  // 2. รายการ Activities (ผลงานยามว่าง เพิ่มได้ทั้งภาพและคลิปวิดีโอ)
   const uploadedActivities = items.filter(
     (item) => (item.categoryId === "cat-activities" || item.category === "activities") && (item.imageUrl || item.url || item.videoUrl)
   ).map(item => ({
@@ -124,15 +150,7 @@ export default function PortfolioSection({
 
   const heroActivities = Array.isArray(activities) && activities.length > 0
     ? activities
-    : (
-        // หากยังไม่มี activities ให้ดึงข้อมูลเก่าจาก certificates และ awards มาเป็น fallback อัตโนมัติ
-        ((Array.isArray(certificates) && certificates.length > 0) || (Array.isArray(awards) && awards.length > 0))
-          ? [
-              ...(Array.isArray(certificates) ? certificates.map(c => ({ id: c.id, type: "image", url: c.imageUrl || c.url || c.src })) : []),
-              ...(Array.isArray(awards) ? awards.map(a => ({ id: a.id, type: "image", url: a.imageUrl || a.url || a.src })) : [])
-            ]
-          : DEFAULT_ACTIVITIES
-      );
+    : DEFAULT_ACTIVITIES;
 
   const combinedActivities = [
     ...heroActivities,
@@ -303,7 +321,41 @@ export default function PortfolioSection({
         </div>
       )}
 
-      {/* Tab 2: Activities Showcase Grid (รวม cer กับ award แทนที่ด้วย Activities แสดงเฉพาะภาพหรือวิดีโอเท่านั้น) */}
+      {/* Tab 2: Certificates & Awards Showcase Grid (รวม Certificates & Awards เข้าด้วยกัน แสดงเฉพาะรูปภาพเกียรติบัตร) */}
+      {activeTab === "certs-awards" && (
+        <div className="tab-content-wrapper">
+          <div className="pure-media-cards-grid">
+            {displayCertsAwards.map((item, idx) => {
+              const imgUrl = item.imageUrl || item.src || item.url;
+              if (!imgUrl) return null;
+              return (
+                <div 
+                  key={item.id || idx} 
+                  className="pure-media-card group"
+                  onClick={() => setLightboxMedia({ type: "image", url: imgUrl })}
+                  title="คลิกเพื่อดูภาพขยาย"
+                >
+                  <div className="pure-media-inner">
+                    <img 
+                      src={imgUrl} 
+                      alt="Certificate or Award" 
+                      className="pure-media-img" 
+                      loading="lazy" 
+                    />
+                    <div className="pure-media-hover-overlay">
+                      <span className="media-zoom-btn">
+                        <Icons.Maximize2 size={16} /> ดูภาพขยาย
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: Activities Showcase Grid (เพิ่มได้ทั้งภาพและคลิปวิดีโอ แสดงเฉพาะสื่อและขยายเพื่อดูได้) */}
       {activeTab === "activities" && (
         <div className="tab-content-wrapper">
           <div className="pure-media-cards-grid">
@@ -376,7 +428,7 @@ export default function PortfolioSection({
         </div>
       )}
 
-      {/* Tab 3: Tech Stack Showcase (การ์ดสไตล์ภาพแนบที่ 4) */}
+      {/* Tab 4: Tech Stack Showcase (การ์ดสไตล์ภาพแนบที่ 4) */}
       {activeTab === "techstack" && (
         <div className="tab-content-wrapper">
           <div className="tech-cards-grid">

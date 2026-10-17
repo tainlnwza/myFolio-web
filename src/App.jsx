@@ -8,8 +8,9 @@ import {
   DEFAULT_TECH_STACK,
   DEFAULT_SUBTITLES,
   DEFAULT_GALLERY,
+  DEFAULT_CERTS_AND_AWARDS,
   DEFAULT_ACTIVITIES,
-  DEFAULT_CERTIFICATES,
+  DEFAULT_CERTIFICATES, 
   DEFAULT_AWARDS,
   getHeroData, 
   updateHeroData, 
@@ -197,11 +198,12 @@ const PublicPage = () => {
         {/* 4. About Section (เว้นสำหรับใส่ประวัติส่วนตัว สถิติ และไทม์ไลน์) */}
         <AboutSection hero={hero} items={items} />
 
-        {/* 5. Portfolio Section (3 แท็บ: Projects, Activities, Tech Stack) */}
+        {/* 5. Portfolio Section (4 แท็บ: Projects, Certificates & Awards, Activities, Tech Stack) */}
         <PortfolioSection 
           items={items} 
           categories={categories} 
           techStack={hero.techStack} 
+          certsAndAwards={hero.certsAndAwards}
           activities={hero.activities}
           certificates={hero.certificates}
           awards={hero.awards}
@@ -303,7 +305,11 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     file: null
   });
 
-  // Activities (รวม cer กับ award แทนที่ด้วย Activities รองรับทั้งรูปภาพและวิดีโอ)
+  // Certificates & Awards (รวม Certificates & Awards เข้าด้วยกัน - เพิ่มได้เฉพาะรูปภาพเกียรติบัตร)
+  const [certAwardImageUrl, setCertAwardImageUrl] = useState("");
+  const [showCertAwardModal, setShowCertAwardModal] = useState(false);
+
+  // Activities (เพิ่มได้ทั้งคลิปทั้งภาพ)
   const [activityForm, setActivityForm] = useState({
     type: "image", // 'image' | 'video'
     url: "",
@@ -823,7 +829,80 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     }
   };
 
-  // 1.3 Activities Actions (รวม cer กับ award แทนที่ด้วย Activities รองรับทั้งรูปภาพและวิดีโอ)
+  // 1.3 Certificates & Awards Actions (รวม cer & award เข้าด้วยกัน - เพิ่มได้เฉพาะรูปภาพเกียรติบัตร)
+  const handleUploadCertAwardImage = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      triggerToast("⏳ กำลังอัปโหลดรูปภาพเกียรติบัตร/รางวัล...");
+      try {
+        const url = await uploadImage(file);
+        setCertAwardImageUrl(url);
+        triggerToast("✅ อัปโหลดรูปภาพเรียบร้อย!");
+      } catch (err) {
+        console.error(err);
+        triggerToast("❌ อัปโหลดไม่สำเร็จ");
+      }
+    }
+  };
+
+  const handleSaveCertAward = async (e) => {
+    e.preventDefault();
+    if (!certAwardImageUrl.trim()) {
+      triggerToast("⚠️ กรุณาเลือกไฟล์หรือใส่ URL รูปภาพเกียรติบัตร/รางวัล");
+      return;
+    }
+    const currentCertsAwards = Array.isArray(hero.certsAndAwards) && hero.certsAndAwards.length > 0
+      ? [...hero.certsAndAwards]
+      : (
+          ((Array.isArray(hero.certificates) && hero.certificates.length > 0) || (Array.isArray(hero.awards) && hero.awards.length > 0))
+            ? [
+                ...(Array.isArray(hero.certificates) ? hero.certificates : []),
+                ...(Array.isArray(hero.awards) ? hero.awards : [])
+              ]
+            : [...DEFAULT_CERTS_AND_AWARDS]
+        );
+    const newCertAward = {
+      id: `cert-award-${Date.now()}`,
+      imageUrl: certAwardImageUrl.trim()
+    };
+    const updated = [...currentCertsAwards, newCertAward];
+    const updatedHero = { ...hero, certsAndAwards: updated };
+    setHero(updatedHero);
+    try {
+      await updateHeroData(updatedHero);
+      setCertAwardImageUrl("");
+      setShowCertAwardModal(false);
+      triggerToast("🎉 เพิ่มรูปภาพเกียรติบัตร & รางวัลเรียบร้อย!");
+    } catch (err) {
+      console.error(err);
+      triggerToast("❌ เกิดข้อผิดพลาดในการบันทึก");
+    }
+  };
+
+  const handleDeleteCertAward = async (id) => {
+    if (!window.confirm("ต้องการลบรูปภาพเกียรติบัตร/รางวัลนี้ใช่ไหม?")) return;
+    const currentCertsAwards = Array.isArray(hero.certsAndAwards) && hero.certsAndAwards.length > 0
+      ? [...hero.certsAndAwards]
+      : (
+          ((Array.isArray(hero.certificates) && hero.certificates.length > 0) || (Array.isArray(hero.awards) && hero.awards.length > 0))
+            ? [
+                ...(Array.isArray(hero.certificates) ? hero.certificates : []),
+                ...(Array.isArray(hero.awards) ? hero.awards.map(a => ({ id: a.id, type: "image", url: a.imageUrl || a.url || a.src })) : [])
+              ]
+            : [...DEFAULT_CERTS_AND_AWARDS]
+        );
+    const updated = currentCertsAwards.filter(c => c.id !== id);
+    const updatedHero = { ...hero, certsAndAwards: updated };
+    setHero(updatedHero);
+    try {
+      await updateHeroData(updatedHero);
+      triggerToast("🗑️ ลบรูปภาพเกียรติบัตร/รางวัลเรียบร้อยแล้ว!");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // 1.4 Activities Actions (เพิ่มได้ทั้งภาพและคลิปวิดีโอ)
   const handleUploadActivityMedia = async (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1138,6 +1217,9 @@ const AdminPage = ({ setGlobalCustomCss }) => {
           </button>
           <button className={`admin-menu-item ${activeTab === "items" ? "active" : ""}`} onClick={() => setActiveTab("items")}>
             <DynamicIcon name="Code2" size={18} /> จัดการผลงานโปรเจกต์ (Projects)
+          </button>
+          <button className={`admin-menu-item ${activeTab === "certs-awards" ? "active" : ""}`} onClick={() => setActiveTab("certs-awards")}>
+            <DynamicIcon name="Award" size={18} /> จัดการเกียรติบัตร & รางวัล (Certificates & Awards)
           </button>
           <button className={`admin-menu-item ${activeTab === "activities" ? "active" : ""}`} onClick={() => setActiveTab("activities")}>
             <DynamicIcon name="Sparkles" size={18} /> กิจกรรม / ผลงานเวลาว่าง (Activities)
@@ -1932,7 +2014,65 @@ const AdminPage = ({ setGlobalCustomCss }) => {
             </div>
           )}
 
-          {/* TAB: ACTIVITIES (รวม cer กับ award แทนที่ด้วย Activities รองรับทั้งรูปภาพและวิดีโอ) */}
+          {/* TAB: CERTIFICATES & AWARDS (รวม Certificates & Awards เข้าด้วยกัน - เพิ่มได้เฉพาะรูปภาพเกียรติบัตร) */}
+          {activeTab === "certs-awards" && (
+            <div>
+              <div className="admin-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h2>จัดการเกียรติบัตร & รางวัล (Certificates & Awards)</h2>
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: "0.25rem 0 0 0" }}>
+                    รวมรูปภาพเกียรติบัตรและรางวัลเข้าด้วยกัน (เพิ่มได้เฉพาะรูปภาพเกียรติบัตร แสดงเฉพาะภาพและกดขยายเพื่อดูได้)
+                  </p>
+                </div>
+                <button 
+                  type="button" 
+                  className="btn btn-primary" 
+                  onClick={() => { 
+                    setCertAwardImageUrl(""); 
+                    setShowCertAwardModal(true); 
+                  }}
+                >
+                  <DynamicIcon name="Plus" size={16} /> เพิ่มภาพเกียรติบัตร/รางวัล
+                </button>
+              </div>
+
+              <div className="admin-gallery-grid">
+                {(Array.isArray(hero.certsAndAwards) && hero.certsAndAwards.length > 0 
+                  ? hero.certsAndAwards 
+                  : (
+                      ((Array.isArray(hero.certificates) && hero.certificates.length > 0) || (Array.isArray(hero.awards) && hero.awards.length > 0))
+                        ? [
+                            ...(Array.isArray(hero.certificates) ? hero.certificates : []),
+                            ...(Array.isArray(hero.awards) ? hero.awards : [])
+                          ]
+                        : DEFAULT_CERTS_AND_AWARDS
+                    )
+                ).map((cert, idx) => (
+                  <div key={cert.id || idx} className="admin-gallery-card">
+                    <img src={cert.imageUrl || cert.url || cert.src} alt="Certificate / Award" className="admin-gallery-thumb" />
+                    <div className="admin-gallery-info">
+                      <div className="admin-gallery-title" style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                        <DynamicIcon name="Award" size={14} style={{ color: "#eab308" }} />
+                        <span>เกียรติบัตร/รางวัล #{idx + 1}</span>
+                      </div>
+                      <div className="admin-gallery-actions">
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ padding: "0.35rem 0.5rem", fontSize: "0.75rem", color: "#f87171", width: "100%", justifyContent: "center" }}
+                          onClick={() => handleDeleteCertAward(cert.id)}
+                        >
+                          <DynamicIcon name="Trash2" size={13} /> ลบรูปภาพนี้
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: ACTIVITIES (ผลงานเวลาว่าง เช่น อนิเมชั่น คลิปวิดีโอ หรือภาพ รองรับทั้งคลิปทั้งภาพ) */}
           {activeTab === "activities" && (
             <div>
               <div className="admin-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -2671,7 +2811,75 @@ const AdminPage = ({ setGlobalCustomCss }) => {
         </div>
       )}
 
-      {/* Modal: เพิ่มผลงาน Activities (รวม cer กับ award แทนที่ด้วย Activities รองรับทั้งภาพและวิดีโอ) */}
+      {/* Modal: เพิ่มรูปภาพเกียรติบัตร & รางวัล (Certificates & Awards - ภาพเท่านั้น) */}
+      {showCertAwardModal && (
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: "480px" }}>
+            <div className="modal-header">
+              <h3>เพิ่มรูปภาพเกียรติบัตร & รางวัล</h3>
+              <button type="button" className="btn-icon" onClick={() => setShowCertAwardModal(false)}>
+                <DynamicIcon name="X" size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveCertAward}>
+              <div className="modal-body">
+                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+                  ส่วนนี้รองรับเฉพาะรูปภาพเกียรติบัตรหรือภาพรางวัล (ภาพเท่านั้น)
+                </p>
+                <div className="form-group">
+                  <label>เลือกไฟล์รูปภาพเกียรติบัตร (PNG, JPG, WebP) *</label>
+                  <div style={{ display: "flex", gap: "1rem", alignItems: "center", marginBottom: "0.85rem" }}>
+                    <div style={{ width: "96px", height: "70px", borderRadius: "8px", overflow: "hidden", background: "#000", border: "1px dashed rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {certAwardImageUrl ? (
+                        <img src={certAwardImageUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <DynamicIcon name="Award" size={26} style={{ color: "var(--text-muted)" }} />
+                      )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        id="cert-award-file-input" 
+                        style={{ display: "none" }}
+                        onChange={handleUploadCertAwardImage} 
+                      />
+                      <button 
+                        type="button" 
+                        className="btn btn-secondary" 
+                        onClick={() => document.getElementById("cert-award-file-input").click()}
+                      >
+                        <DynamicIcon name="UploadCloud" size={16} /> อัปโหลดรูปภาพเกียรติบัตร
+                      </button>
+                    </div>
+                  </div>
+
+                  <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.25rem", display: "block" }}>
+                    หรือใส่ลิงก์ URL รูปภาพโดยตรง:
+                  </label>
+                  <input 
+                    type="url" 
+                    className="form-control" 
+                    placeholder="https://..." 
+                    value={certAwardImageUrl} 
+                    onChange={e => setCertAwardImageUrl(e.target.value)} 
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowCertAwardModal(false)}>
+                  ยกเลิก
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  <DynamicIcon name="Check" size={16} /> บันทึกรูปภาพเกียรติบัตร
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: เพิ่มผลงาน Activities (กิจกรรม/ผลงานเวลาว่าง รองรับทั้งภาพและวิดีโอ) */}
       {showActivityModal && (
         <div className="modal-backdrop">
           <div className="modal-content" style={{ maxWidth: "520px" }}>

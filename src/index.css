@@ -1425,10 +1425,10 @@ section {
   visibility: visible !important;
 }
 
-/* Modern Capsule Bar: Widen to full width and distribute equal tabs (Projects, Activities, Tech Stack) */
+/* Modern Capsule Bar: Widen to full width and distribute equal tabs (Projects, Certs & Awards, Activities, Tech Stack) */
 .portfolio-tabs-nav-modern {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   width: 100%;
   align-items: center;
   gap: 0.5rem;
@@ -1441,6 +1441,12 @@ section {
   box-shadow:
     0 15px 35px -5px rgba(0, 0, 0, 0.7),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 768px) {
+  .portfolio-tabs-nav-modern {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .portfolio-tab-btn-modern,

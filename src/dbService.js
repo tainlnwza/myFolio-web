@@ -132,6 +132,12 @@ export const DEFAULT_AWARDS = [
   { id: "award-2", imageUrl: "https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=900&q=80" }
 ];
 
+// รวม Certificates & Awards เข้าด้วยกันเป็นชุดตั้งต้น (เพิ่มได้เฉพาะรูปภาพ)
+export const DEFAULT_CERTS_AND_AWARDS = [
+  ...DEFAULT_CERTIFICATES,
+  ...DEFAULT_AWARDS
+];
+
 // รายการกิจกรรมและผลงานเวลาว่างเริ่มต้น (Activities: รูปภาพ, วิดีโอ, คลิป, อนิเมชัน)
 export const DEFAULT_ACTIVITIES = [
   {
@@ -177,12 +183,14 @@ export const DEFAULT_HERO = {
   imageUrl: "", // Legacy fallback
   yearsExp: "1+",
   projectsCount: "0",
+  certsAndAwardsCount: "0",
   activitiesCount: "0",
   resumeUrl: "#",
   education: DEFAULT_EDUCATION,
   experience: DEFAULT_EXPERIENCE,
   techStack: DEFAULT_TECH_STACK,
   gallery: DEFAULT_GALLERY,
+  certsAndAwards: DEFAULT_CERTS_AND_AWARDS,
   activities: DEFAULT_ACTIVITIES,
   certificates: DEFAULT_CERTIFICATES,
   awards: DEFAULT_AWARDS
@@ -190,6 +198,7 @@ export const DEFAULT_HERO = {
 
 export const DEFAULT_CATEGORIES = [
   { id: "cat-projects", name: "💻 ผลงานโปรเจกต์ (Projects)" },
+  { id: "cat-certs-awards", name: "📜 เกียรติบัตร & รางวัล (Certificates & Awards)" },
   { id: "cat-activities", name: "✨ กิจกรรมและผลงานยามว่าง (Activities)" }
 ];
 
@@ -528,16 +537,19 @@ export const getHeroData = async () => {
     gallery: Array.isArray(rawData.gallery) && rawData.gallery.length > 0
       ? rawData.gallery
       : DEFAULT_GALLERY,
-    activities: Array.isArray(rawData.activities) && rawData.activities.length > 0
-      ? rawData.activities
+    certsAndAwards: Array.isArray(rawData.certsAndAwards) && rawData.certsAndAwards.length > 0
+      ? rawData.certsAndAwards
       : (
           ((Array.isArray(rawData.certificates) && rawData.certificates.length > 0) || (Array.isArray(rawData.awards) && rawData.awards.length > 0))
             ? [
-                ...(Array.isArray(rawData.certificates) ? rawData.certificates.map(c => ({ id: c.id || `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`, type: "image", url: c.imageUrl || c.url || c.src })) : []),
-                ...(Array.isArray(rawData.awards) ? rawData.awards.map(a => ({ id: a.id || `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`, type: "image", url: a.imageUrl || a.url || a.src })) : [])
-              ].filter(item => item.url)
-            : DEFAULT_ACTIVITIES
-        )
+                ...(Array.isArray(rawData.certificates) ? rawData.certificates : []),
+                ...(Array.isArray(rawData.awards) ? rawData.awards : [])
+              ].filter(c => c.imageUrl || c.url || c.src)
+            : DEFAULT_CERTS_AND_AWARDS
+        ),
+    activities: Array.isArray(rawData.activities) && rawData.activities.length > 0
+      ? rawData.activities
+      : DEFAULT_ACTIVITIES
   };
 };
 

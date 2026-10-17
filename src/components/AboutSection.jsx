@@ -15,18 +15,24 @@ export default function AboutSection({ hero, items = [] }) {
   );
   const projCount = projectItems.length;
 
+  const uploadedCertsAwards = items.filter(
+    (item) => (item.categoryId === "cat-certs-awards" || item.categoryId === "cat-certificates" || item.categoryId === "cat-awards" || item.category === "certificates" || item.category === "awards") && (item.imageUrl || item.file)
+  );
+  const heroCertsAwards = Array.isArray(hero?.certsAndAwards)
+    ? hero.certsAndAwards.filter(c => c.imageUrl || c.src || c.url)
+    : [
+        ...(Array.isArray(hero?.certificates) ? hero.certificates.filter(c => c.imageUrl || c.src || c.url) : []),
+        ...(Array.isArray(hero?.awards) ? hero.awards.filter(a => a.imageUrl || a.src || a.url) : [])
+      ];
+  const certAwardCount = uploadedCertsAwards.length + heroCertsAwards.length;
+
   const uploadedActs = items.filter(
     (item) => (item.categoryId === "cat-activities" || item.category === "activities") && (item.imageUrl || item.url || item.videoUrl)
   );
   const heroActs = Array.isArray(hero?.activities) 
     ? hero.activities.filter(a => a.url || a.imageUrl || a.src) 
-    : [
-        ...(Array.isArray(hero?.certificates) ? hero.certificates.filter(c => c.imageUrl || c.src || c.url) : []),
-        ...(Array.isArray(hero?.awards) ? hero.awards.filter(a => a.imageUrl || a.src || a.url) : [])
-      ];
+    : [];
   const actCount = uploadedActs.length + heroActs.length;
-
-  const techCount = Array.isArray(hero?.techStack) ? hero.techStack.length : 0;
 
   // แบ่งบรรทัดชื่อแบบสวยงามตามสไตล์ภาพแนบที่ 4
   const nameParts = name.trim().split(" ");
@@ -192,7 +198,22 @@ export default function AboutSection({ hero, items = [] }) {
             </div>
           </a>
 
-          {/* Card 2: Activities */}
+          {/* Card 2: Certificates & Awards */}
+          <a href="#portfolio" className="about-stat-banner-card" title="คลิกเพื่อไปยังส่วน Certificates & Awards">
+            <div className="stat-banner-left">
+              <div className="stat-banner-tag">
+                <Icons.Award size={22} className="stat-banner-tag-icon" />
+                <span>CERTS & AWARDS</span>
+              </div>
+              <p className="stat-banner-desc">skills & honors validated</p>
+            </div>
+            <div className="stat-banner-right">
+              <span className="stat-banner-number">{certAwardCount}</span>
+              <Icons.ArrowUpRight size={22} className="stat-banner-arrow" />
+            </div>
+          </a>
+
+          {/* Card 3: Activities */}
           <a href="#portfolio" className="about-stat-banner-card" title="คลิกเพื่อไปยังส่วน Activities">
             <div className="stat-banner-left">
               <div className="stat-banner-tag">
@@ -203,21 +224,6 @@ export default function AboutSection({ hero, items = [] }) {
             </div>
             <div className="stat-banner-right">
               <span className="stat-banner-number">{actCount}</span>
-              <Icons.ArrowUpRight size={22} className="stat-banner-arrow" />
-            </div>
-          </a>
-
-          {/* Card 3: Tech Stack */}
-          <a href="#portfolio" className="about-stat-banner-card" title="คลิกเพื่อไปยังส่วน Tech Stack">
-            <div className="stat-banner-left">
-              <div className="stat-banner-tag">
-                <Icons.Boxes size={22} className="stat-banner-tag-icon" />
-                <span>TECH STACK</span>
-              </div>
-              <p className="stat-banner-desc">technologies & tools mastered</p>
-            </div>
-            <div className="stat-banner-right">
-              <span className="stat-banner-number">{techCount}</span>
               <Icons.ArrowUpRight size={22} className="stat-banner-arrow" />
             </div>
           </a>
