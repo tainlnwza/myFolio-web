@@ -9,6 +9,17 @@ import {
   updateDoc, 
   deleteDoc 
 } from "firebase/firestore";
+import { 
+  isSupabaseConfigured, 
+  uploadFileToSupabase, 
+  setSupabaseAnonKey,
+  getSupabaseAnonKey,
+  testSupabaseConnection,
+  SUPABASE_PROJECT_ID,
+  SUPABASE_BUCKET_NAME,
+  SUPABASE_FOLDER_CERTS_AWARDS, 
+  SUPABASE_FOLDER_ACTIVITIES 
+} from "./supabase";
 
 // ข้อมูลการศึกษาเริ่มต้น (Default Education)
 export const DEFAULT_EDUCATION = [
@@ -868,3 +879,43 @@ export const uploadMedia = async (file) => {
   }
   return uploadImage(file, false);
 };
+
+/* ==========================================================================
+   8. SUPABASE STORAGE INTEGRATION (Folders: cer & award | activity pic&clip)
+   ========================================================================== */
+export {
+  isSupabaseConfigured,
+  setSupabaseAnonKey,
+  getSupabaseAnonKey,
+  testSupabaseConnection,
+  SUPABASE_PROJECT_ID,
+  SUPABASE_BUCKET_NAME,
+  SUPABASE_FOLDER_CERTS_AWARDS,
+  SUPABASE_FOLDER_ACTIVITIES
+};
+
+/**
+ * อัปโหลดรูปภาพเกียรติบัตร/รางวัลเข้าสู่ Supabase Storage (Folder: 'cer & award')
+ * ได้รับ Public URL กลับมา เพื่อนำไปบันทึกใน Firestore โดยไม่ติดเพดาน 1MB
+ */
+export const uploadCertAwardFile = async (file) => {
+  if (!file) return "";
+  if (isSupabaseConfigured()) {
+    return await uploadFileToSupabase(file, SUPABASE_FOLDER_CERTS_AWARDS);
+  }
+  // หากยังไม่ได้ใส่ Supabase Key จะส่ง Error ชัดเจนเพื่อแจ้งเตือน
+  throw new Error("ยังไม่ได้เชื่อมต่อ Supabase Anon Key! กรุณากรอก Anon Key ในเมนู 'ตั้งค่า Supabase Storage' ของหน้า Control Center หรือใน .env");
+};
+
+/**
+ * อัปโหลดคลิปวิดีโอหรือรูปภาพกิจกรรมเข้าสู่ Supabase Storage (Folder: 'activity pic&clip')
+ * ปลดล็อคขนาดไฟล์วิดีโอและรูปภาพ ไม่ติดเพดาน 850KB อีกต่อไป
+ */
+export const uploadActivityFile = async (file) => {
+  if (!file) return "";
+  if (isSupabaseConfigured()) {
+    return await uploadFileToSupabase(file, SUPABASE_FOLDER_ACTIVITIES);
+  }
+  throw new Error("ยังไม่ได้เชื่อมต่อ Supabase Anon Key! กรุณากรอก Anon Key ในเมนู 'ตั้งค่า Supabase Storage' ของหน้า Control Center หรือใน .env");
+};
+

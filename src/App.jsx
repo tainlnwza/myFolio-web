@@ -26,6 +26,14 @@ import {
   updateContactData, 
   uploadImage,
   uploadMedia,
+  uploadCertAwardFile,
+  uploadActivityFile,
+  isSupabaseConfigured,
+  setSupabaseAnonKey,
+  getSupabaseAnonKey,
+  testSupabaseConnection,
+  SUPABASE_PROJECT_ID,
+  SUPABASE_BUCKET_NAME,
   isVideoMedia,
   getYouTubeId,
   getVimeoId,
@@ -316,6 +324,11 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     thumbnailUrl: ""
   });
   const [showActivityModal, setShowActivityModal] = useState(false);
+  
+  // Supabase Storage configuration states
+  const [supabaseKeyInput, setSupabaseKeyInput] = useState(getSupabaseAnonKey() || "");
+  const [supabaseTesting, setSupabaseTesting] = useState(false);
+  const [supabaseStatusMsg, setSupabaseStatusMsg] = useState("");
 
   const TECH_PRESETS = [
     { name: "HTML", imageUrl: "https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original.svg", icon: "Layout" },
@@ -833,14 +846,19 @@ const AdminPage = ({ setGlobalCustomCss }) => {
   const handleUploadCertAwardImage = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      triggerToast("⏳ กำลังอัปโหลดรูปภาพเกียรติบัตร/รางวัล...");
+      if (!isSupabaseConfigured()) {
+        triggerToast("⚠️ ยังไม่ได้เชื่อมต่อ Supabase! กำลังนำคุณไปยังแท็บ 'ตั้งค่า Supabase Storage' เพื่อกรอก Anon Key");
+        setActiveTab("supabase");
+        return;
+      }
+      triggerToast("⏳ กำลังอัปโหลดรูปภาพเกียรติบัตรขึ้น Supabase Storage (cer & award)...");
       try {
-        const url = await uploadImage(file);
+        const url = await uploadCertAwardFile(file);
         setCertAwardImageUrl(url);
-        triggerToast("✅ อัปโหลดรูปภาพเรียบร้อย!");
+        triggerToast("🎉 อัปโหลดรูปภาพขึ้น Supabase สำเร็จ!");
       } catch (err) {
         console.error(err);
-        triggerToast("❌ อัปโหลดไม่สำเร็จ");
+        triggerToast(`❌ ${err.message || "อัปโหลดไม่สำเร็จ"}`);
       }
     }
   };
@@ -906,16 +924,21 @@ const AdminPage = ({ setGlobalCustomCss }) => {
   const handleUploadActivityMedia = async (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (!isSupabaseConfigured()) {
+        triggerToast("⚠️ ยังไม่ได้เชื่อมต่อ Supabase! กำลังนำคุณไปยังแท็บ 'ตั้งค่า Supabase Storage' เพื่อกรอก Anon Key");
+        setActiveTab("supabase");
+        return;
+      }
       const isVideo = file.type?.startsWith("video/") || /\.(mp4|webm|mov|ogg)$/i.test(file.name);
-      triggerToast(isVideo ? "⏳ กำลังอัปโหลดไฟล์วิดีโอ..." : "⏳ กำลังอัปโหลดรูปภาพ...");
+      triggerToast(isVideo ? "⏳ กำลังอัปโหลดไฟล์วิดีโอขึ้น Supabase (activity pic&clip)..." : "⏳ กำลังอัปโหลดรูปภาพขึ้น Supabase (activity pic&clip)...");
       try {
-        const url = await uploadMedia(file);
+        const url = await uploadActivityFile(file);
         setActivityForm(prev => ({
           ...prev,
           url,
           type: isVideo ? "video" : "image"
         }));
-        triggerToast("✅ อัปโหลดไฟล์เรียบร้อย!");
+        triggerToast("🎉 อัปโหลดไฟล์ขึ้น Supabase Storage สำเร็จ!");
       } catch (err) {
         console.error(err);
         triggerToast(`❌ ${err.message || "อัปโหลดไม่สำเร็จ"}`);
@@ -926,14 +949,19 @@ const AdminPage = ({ setGlobalCustomCss }) => {
   const handleUploadActivityThumbnail = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      triggerToast("⏳ กำลังอัปโหลดภาพปกวิดีโอ...");
+      if (!isSupabaseConfigured()) {
+        triggerToast("⚠️ ยังไม่ได้เชื่อมต่อ Supabase! กำลังนำคุณไปยังแท็บ 'ตั้งค่า Supabase Storage' เพื่อกรอก Anon Key");
+        setActiveTab("supabase");
+        return;
+      }
+      triggerToast("⏳ กำลังอัปโหลดภาพปกวิดีโอขึ้น Supabase...");
       try {
-        const url = await uploadImage(file);
+        const url = await uploadActivityFile(file);
         setActivityForm(prev => ({ ...prev, thumbnailUrl: url }));
-        triggerToast("✅ อัปโหลดภาพปกเรียบร้อย!");
+        triggerToast("✅ อัปโหลดภาพปกขึ้น Supabase เรียบร้อย!");
       } catch (err) {
         console.error(err);
-        triggerToast("❌ อัปโหลดภาพปกไม่สำเร็จ");
+        triggerToast(`❌ ${err.message || "อัปโหลดภาพปกไม่สำเร็จ"}`);
       }
     }
   };
@@ -1184,11 +1212,18 @@ const AdminPage = ({ setGlobalCustomCss }) => {
             <span>⚙️</span> CONTROL CENTER
           </h1>
           <p className="admin-subtitle">
-            โหมดจัดการข้อมูลแบบ Local | สถานะการเชื่อมต่อ Firebase: {" "}
+            Firebase Database: {" "}
             {isFirebaseConfigured ? (
-              <span style={{ color: "#10b981", fontWeight: "bold" }}>🔥 เชื่อมต่อแล้ว (ใช้งานจริง)</span>
+              <span style={{ color: "#10b981", fontWeight: "bold" }}>🔥 เชื่อมต่อแล้ว</span>
             ) : (
-              <span style={{ color: "#f59e0b", fontWeight: "bold" }}>⚠️ โหมดทดสอบ (LocalStorage Fallback)</span>
+              <span style={{ color: "#f59e0b", fontWeight: "bold" }}>⚠️ LocalStorage</span>
+            )}
+            {" | "}
+            Supabase Storage: {" "}
+            {isSupabaseConfigured() ? (
+              <span style={{ color: "#10b981", fontWeight: "bold" }}>⚡ พร้อมใช้งาน</span>
+            ) : (
+              <span style={{ color: "#f87171", fontWeight: "bold" }}>⚠️ ยังไม่ระบุ Anon Key</span>
             )}
           </p>
         </div>
@@ -1229,6 +1264,9 @@ const AdminPage = ({ setGlobalCustomCss }) => {
           </button>
           <button className={`admin-menu-item ${activeTab === "css" ? "active" : ""}`} onClick={() => setActiveTab("css")}>
             <DynamicIcon name="Palette" size={18} /> ปรับแต่ง CSS ตกแต่งเว็บ
+          </button>
+          <button className={`admin-menu-item ${activeTab === "supabase" ? "active" : ""}`} onClick={() => setActiveTab("supabase")}>
+            <DynamicIcon name="HardDrive" size={18} /> ตั้งค่า Supabase Storage
           </button>
           <button className={`admin-menu-item ${activeTab === "firebase" ? "active" : ""}`} onClick={() => setActiveTab("firebase")}>
             <DynamicIcon name="Database" size={18} /> ข้อมูล Firebase
@@ -2202,7 +2240,133 @@ const AdminPage = ({ setGlobalCustomCss }) => {
             </div>
           )}
 
-          {/* TAB 6: FIREBASE */}
+          {/* TAB 6: SUPABASE STORAGE SETTINGS */}
+          {activeTab === "supabase" && (
+            <div>
+              <div className="admin-section-header">
+                <h2>ตั้งค่า Supabase Storage (เก็บรูปภาพ & วิดีโอ)</h2>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: "0.25rem 0 0 0" }}>
+                  แก้ปัญหาติดเพดาน 1MB ของ Firestore และปลดล็อคการอัปโหลดรูปภาพเกียรติบัตรและคลิปวิดีโอเข้า Supabase Storage
+                </p>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                {/* 1. Status & Info Card */}
+                <div style={{ background: "rgba(30, 41, 59, 0.5)", border: "1px solid rgba(255,255,255,0.08)", padding: "1.5rem", borderRadius: "12px", lineHeight: 1.8 }}>
+                  <h3 style={{ fontSize: "1.1rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <DynamicIcon name="HardDrive" size={20} style={{ color: "#38bdf8" }} />
+                    ข้อมูล Bucket & โฟลเดอร์ Supabase
+                  </h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: "0.5rem", fontSize: "0.9rem" }}>
+                    <span style={{ color: "var(--text-muted)" }}>Project ID:</span>
+                    <span style={{ fontFamily: "monospace", color: "#38bdf8" }}>{SUPABASE_PROJECT_ID}</span>
+
+                    <span style={{ color: "var(--text-muted)" }}>Bucket Name:</span>
+                    <span style={{ fontFamily: "monospace", color: "#eab308" }}>{SUPABASE_BUCKET_NAME}</span>
+
+                    <span style={{ color: "var(--text-muted)" }}>Cer & Award Folder:</span>
+                    <span style={{ fontFamily: "monospace", color: "#10b981" }}>database myfolio/cer & award/</span>
+
+                    <span style={{ color: "var(--text-muted)" }}>Activity Folder:</span>
+                    <span style={{ fontFamily: "monospace", color: "#a855f7" }}>database myfolio/activity pic&clip/</span>
+
+                    <span style={{ color: "var(--text-muted)" }}>สถานะการเชื่อมต่อ:</span>
+                    <span>
+                      {isSupabaseConfigured() ? (
+                        <span style={{ color: "#10b981", fontWeight: "bold" }}>✅ กำหนด Anon Key แล้ว (พร้อมอัปโหลด)</span>
+                      ) : (
+                        <span style={{ color: "#f87171", fontWeight: "bold" }}>❌ ยังไม่ได้กำหนด Anon Key</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Key Input Form */}
+                <div style={{ background: "rgba(30, 41, 59, 0.35)", border: "1px solid rgba(255,255,255,0.08)", padding: "1.5rem", borderRadius: "12px" }}>
+                  <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>
+                    🔑 กำหนดค่า Supabase Anon (Public) Key
+                  </h3>
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+                    สามารถคัดลอกได้จาก:{" "}
+                    <a 
+                      href={`https://supabase.com/dashboard/project/${SUPABASE_PROJECT_ID}/settings/api`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: "#38bdf8", textDecoration: "underline" }}
+                    >
+                      Supabase Project Settings &gt; API &gt; anon public key
+                    </a>
+                  </p>
+
+                  <div className="form-group" style={{ marginBottom: "1rem" }}>
+                    <label>Supabase Anon Key (JWT format เริ่มต้นด้วย eyJhbGci...)</label>
+                    <textarea
+                      className="form-control"
+                      rows={4}
+                      style={{ fontFamily: "monospace", fontSize: "0.85rem", wordBreak: "break-all" }}
+                      placeholder="วาง anon public key ที่ได้จาก Supabase ที่นี่..."
+                      value={supabaseKeyInput}
+                      onChange={e => setSupabaseKeyInput(e.target.value)}
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        const trimmed = supabaseKeyInput.trim();
+                        setSupabaseAnonKey(trimmed);
+                        triggerToast(trimmed ? "💾 บันทึก Supabase Anon Key เรียบร้อยแล้ว!" : "🗑️ ลบ Anon Key เรียบร้อยแล้ว");
+                      }}
+                    >
+                      <DynamicIcon name="Save" size={16} /> บันทึก Anon Key
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      disabled={supabaseTesting}
+                      onClick={async () => {
+                        setSupabaseTesting(true);
+                        setSupabaseStatusMsg("⏳ กำลังทดสอบการเชื่อมต่อกับ Supabase Storage...");
+                        const res = await testSupabaseConnection();
+                        setSupabaseTesting(false);
+                        setSupabaseStatusMsg(res.message);
+                        triggerToast(res.success ? "✅ " + res.message : "❌ " + res.message);
+                      }}
+                    >
+                      <DynamicIcon name="RefreshCw" size={16} /> ทดสอบการเชื่อมต่อ Bucket
+                    </button>
+                  </div>
+
+                  {supabaseStatusMsg && (
+                    <div style={{ marginTop: "1rem", padding: "0.75rem 1rem", borderRadius: "8px", background: "rgba(0,0,0,0.3)", fontSize: "0.85rem", color: supabaseStatusMsg.includes("สำเร็จ") ? "#10b981" : "#f87171" }}>
+                      {supabaseStatusMsg}
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Instructions */}
+                <div style={{ background: "rgba(15, 23, 42, 0.6)", border: "1px dashed rgba(56, 189, 248, 0.3)", padding: "1.25rem", borderRadius: "12px", fontSize: "0.85rem", lineHeight: 1.7 }}>
+                  <h4 style={{ color: "#38bdf8", marginBottom: "0.5rem" }}>📌 คำแนะนำการตั้งค่าใน Supabase Dashboard:</h4>
+                  <ol style={{ paddingLeft: "1.25rem", margin: 0, color: "var(--text-muted)" }}>
+                    <li>
+                      ไปที่หน้า <b>Storage &gt; Configuration &gt; Buckets</b> ใน Supabase และตรวจสอบว่า Bucket <b><code>{SUPABASE_BUCKET_NAME}</code></b> ถูกเลือกเป็น <b>Public Bucket</b>
+                    </li>
+                    <li>
+                      หากมีเปิดใช้งาน <b>Row Level Security (RLS)</b> ให้เพิ่ม Policy เพื่ออนุญาตให้ <b>INSERT (Upload)</b> และ <b>SELECT (Read)</b> สำหรับบทบาท <code>anon</code> / <code>public</code>
+                    </li>
+                    <li>
+                      คัดลอกค่า <b>anon public key</b> จากหน้า <b>Settings &gt; API</b> มาวางในช่องด้านบนแล้วกด "บันทึก Anon Key"
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: FIREBASE */}
           {activeTab === "firebase" && (
             <div>
               <div className="admin-section-header">
@@ -2823,6 +2987,23 @@ const AdminPage = ({ setGlobalCustomCss }) => {
             </div>
             <form onSubmit={handleSaveCertAward}>
               <div className="modal-body">
+                {isSupabaseConfigured() ? (
+                  <div style={{ padding: "0.5rem 0.75rem", borderRadius: "8px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#6ee7b7", fontSize: "0.8rem", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <DynamicIcon name="CheckCircle" size={15} />
+                    <span>อัปโหลดเข้า Supabase Storage (<code>database myfolio/cer & award/</code>)</span>
+                  </div>
+                ) : (
+                  <div style={{ padding: "0.6rem 0.75rem", borderRadius: "8px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", fontSize: "0.8rem", marginBottom: "1rem" }}>
+                    ⚠️ <b>ยังไม่ได้เชื่อมต่อ Supabase Storage:</b>{" "}
+                    <button 
+                      type="button" 
+                      onClick={() => { setShowCertAwardModal(false); setActiveTab("supabase"); }}
+                      style={{ background: "none", border: "none", color: "#38bdf8", textDecoration: "underline", cursor: "pointer", padding: 0, fontWeight: "bold" }}
+                    >
+                      คลิกที่นี่เพื่อไปใส่ Supabase Anon Key
+                    </button>
+                  </div>
+                )}
                 <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
                   ส่วนนี้รองรับเฉพาะรูปภาพเกียรติบัตรหรือภาพรางวัล (ภาพเท่านั้น)
                 </p>
@@ -2891,6 +3072,24 @@ const AdminPage = ({ setGlobalCustomCss }) => {
             </div>
             <form onSubmit={handleSaveActivity}>
               <div className="modal-body">
+                {isSupabaseConfigured() ? (
+                  <div style={{ padding: "0.5rem 0.75rem", borderRadius: "8px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#6ee7b7", fontSize: "0.8rem", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <DynamicIcon name="CheckCircle" size={15} />
+                    <span>อัปโหลดเข้า Supabase Storage (<code>database myfolio/activity pic&clip/</code>)</span>
+                  </div>
+                ) : (
+                  <div style={{ padding: "0.6rem 0.75rem", borderRadius: "8px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", fontSize: "0.8rem", marginBottom: "1rem" }}>
+                    ⚠️ <b>ยังไม่ได้เชื่อมต่อ Supabase Storage:</b>{" "}
+                    <button 
+                      type="button" 
+                      onClick={() => { setShowActivityModal(false); setActiveTab("supabase"); }}
+                      style={{ background: "none", border: "none", color: "#38bdf8", textDecoration: "underline", cursor: "pointer", padding: 0, fontWeight: "bold" }}
+                    >
+                      คลิกที่นี่เพื่อไปใส่ Supabase Anon Key
+                    </button>
+                  </div>
+                )}
+
                 {/* 1. สลับประเภท: รูปภาพ หรือ วิดีโอ */}
                 <div className="form-group">
                   <label>ประเภทของสื่อ (Media Type) *</label>
@@ -2918,8 +3117,8 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                 <div className="form-group">
                   <label>
                     {activityForm.type === "video" 
-                      ? "อัปโหลดไฟล์วิดีโอ (MP4, WebM ขนาดไม่เกิน 850KB) หรือใส่ลิงก์ URL ด้านล่าง *" 
-                      : "เลือกไฟล์รูปภาพ (PNG, JPG, WebP) *"}
+                      ? "อัปโหลดไฟล์วิดีโอ (MP4, WebM, MOV) เข้า Supabase หรือใส่ลิงก์ URL ด้านล่าง *" 
+                      : "เลือกไฟล์รูปภาพ (PNG, JPG, WebP) เข้า Supabase *"}
                   </label>
                   <div style={{ display: "flex", gap: "1rem", alignItems: "center", marginBottom: "0.85rem" }}>
                     <div style={{ width: "96px", height: "70px", borderRadius: "8px", overflow: "hidden", background: "#000", border: "1px dashed rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
