@@ -2144,11 +2144,25 @@ section {
   transition: all var(--transition-smooth);
 }
 
-.contact-info-card:hover {
+.contact-info-card.is-link {
+  cursor: pointer;
+}
+
+.contact-info-card.is-display-only {
+  cursor: default;
+  user-select: text;
+}
+
+.contact-info-card.is-link:hover {
   background: rgba(30, 41, 59, 0.65);
   border-color: var(--card-accent, var(--color-cyan));
   transform: translateX(4px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 229, 255, 0.15);
+}
+
+.contact-info-card.is-display-only:hover {
+  background: rgba(30, 41, 59, 0.50);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .contact-card-icon-box {
@@ -2164,7 +2178,7 @@ section {
   transition: transform var(--transition-fast);
 }
 
-.contact-info-card:hover .contact-card-icon-box {
+.contact-info-card.is-link:hover .contact-card-icon-box {
   transform: scale(1.1);
 }
 

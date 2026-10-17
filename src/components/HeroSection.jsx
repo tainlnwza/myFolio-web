@@ -53,6 +53,39 @@ export default function HeroSection({ hero, contacts = [] }) {
     return () => clearTimeout(timer);
   }, [displayText, isDeleting, currentSubIndex, subtitleList]);
 
+  // รายการสำหรับ FIND ME : แสดงเฉพาะ GitHub, Facebook และ Instagram ตามที่กำหนด
+  const getHeroSocialType = (c) => {
+    const key = `${c.icon || ""} ${c.label || ""} ${c.id || ""}`.toLowerCase();
+    if (key.includes("github")) return "github";
+    if (key.includes("facebook")) return "facebook";
+    if (key.includes("instagram") || key.includes("ig")) return "instagram";
+    return null;
+  };
+
+  const HERO_ORDER = ["github", "facebook", "instagram"];
+
+  const filteredSocials = (contacts || [])
+    .filter(c => getHeroSocialType(c) !== null)
+    .sort((a, b) => HERO_ORDER.indexOf(getHeroSocialType(a)) - HERO_ORDER.indexOf(getHeroSocialType(b)));
+
+  const displaySocials = filteredSocials.length > 0 ? filteredSocials : [
+    { id: "hero-github", icon: "Github", label: "GitHub", value: "https://github.com/tainlnwza", color: "#a855f7" },
+    { id: "hero-facebook", icon: "Facebook", label: "Facebook", value: "https://www.facebook.com/metichai.boonma", color: "#1877F2" },
+    { id: "hero-instagram", icon: "Instagram", label: "Instagram", value: "https://instagram.com/cxptxinn._", color: "#ec4899" }
+  ];
+
+  const getSocialHref = (c) => {
+    const val = (c.value || "").trim();
+    const link = (c.link || "").trim();
+    if (link && link.startsWith("http")) return link;
+    if (val.startsWith("http://") || val.startsWith("https://")) return val;
+    const type = getHeroSocialType(c);
+    if (type === "github") return `https://github.com/${val.replace(/^@/, "")}`;
+    if (type === "facebook") return val.startsWith("www.") ? `https://${val}` : `https://facebook.com/${val}`;
+    if (type === "instagram") return `https://instagram.com/${val.replace(/^@/, "")}`;
+    return link || "#contact";
+  };
+
   return (
     <section id="home" className="hero-section">
       <div className="hero-grid-layout">
@@ -90,42 +123,26 @@ export default function HeroSection({ hero, contacts = [] }) {
             </a>
           </div>
 
-          {/* Social Links Row */}
+          {/* Social Links Row: แสดงเฉพาะ GitHub, Facebook, IG ตามความต้องการข้อ 2 */}
           <div className="hero-socials-wrapper">
             <span className="socials-label">FIND ME :</span>
             <div className="socials-icons-row">
-              {contacts.length > 0 ? (
-                contacts.map((contact) => {
-                  return (
-                    <a
-                      key={contact.id}
-                      href={contact.value?.startsWith("http") ? contact.value : contact.link || `#contact`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-icon-btn"
-                      title={contact.label}
-                      style={{ "--hover-accent": contact.color || "#38bdf8" }}
-                    >
-                      <SafeIcon name={contact.icon || contact.label} size={18} />
-                    </a>
-                  );
-                })
-              ) : (
-                <>
-                  <a href="#contact" className="social-icon-btn" title="GitHub">
-                    <GithubIcon size={18} />
+              {displaySocials.map((contact) => {
+                const href = getSocialHref(contact);
+                return (
+                  <a
+                    key={contact.id}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="social-icon-btn"
+                    title={contact.label}
+                    style={{ "--hover-accent": contact.color || "#38bdf8" }}
+                  >
+                    <SafeIcon name={contact.icon || contact.label} size={18} />
                   </a>
-                  <a href="#contact" className="social-icon-btn" title="LinkedIn">
-                    <LinkedinIcon size={18} />
-                  </a>
-                  <a href="#contact" className="social-icon-btn" title="Instagram">
-                    <InstagramIcon size={18} />
-                  </a>
-                  <a href="#contact" className="social-icon-btn" title="Email">
-                    <Icons.Mail size={18} />
-                  </a>
-                </>
-              )}
+                );
+              })}
             </div>
           </div>
 

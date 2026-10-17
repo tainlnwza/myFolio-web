@@ -350,6 +350,20 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     setItems(itemData);
     setContacts(contactData);
     setCssCode(cssData);
+
+    // ตรวจสอบและบีบอัดโลโก้เดิมที่เคยบันทึกไว้เกินขนาด (ป้องกันปัญหาเอกสาร Firestore เต็ม)
+    if (heroData) {
+      let needsOptimization = false;
+      if (Array.isArray(heroData.education) && heroData.education.some(e => e.imageUrl && e.imageUrl.length > 35000)) {
+        needsOptimization = true;
+      }
+      if (Array.isArray(heroData.experience) && heroData.experience.some(e => e.imageUrl && e.imageUrl.length > 35000)) {
+        needsOptimization = true;
+      }
+      if (needsOptimization) {
+        updateHeroData(heroData).catch(err => console.warn("Auto-optimizing legacy logos:", err));
+      }
+    }
   };
 
   // 1. Save Hero
@@ -376,8 +390,8 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     if (file) {
       triggerToast("⏳ กำลังอัปโหลดรูปภาพโปรไฟล์ Hero...");
       try {
-        const url = await uploadImage(file);
-        setHero(prev => ({ ...prev, heroImageUrl: url, imageUrl: prev.imageUrl || url }));
+        const url = await uploadImage(file, false);
+        setHero(prev => ({ ...prev, heroImageUrl: url }));
         triggerToast("✅ อัปโหลดรูปภาพโปรไฟล์ Hero เสร็จสิ้น!");
       } catch (e) {
         console.error(e);
@@ -584,7 +598,7 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     if (file) {
       triggerToast("⏳ กำลังอัปโหลดรูปภาพ/โลโก้...");
       try {
-        const url = await uploadImage(file);
+        const url = await uploadImage(file, true);
         setTimelineForm(prev => ({ ...prev, imageUrl: url }));
         triggerToast("✅ อัปโหลดรูปภาพ/โลโก้เสร็จสิ้น!");
       } catch (err) {
@@ -675,7 +689,7 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     if (file) {
       triggerToast("⏳ กำลังอัปโหลดโลโก้...");
       try {
-        const url = await uploadImage(file);
+        const url = await uploadImage(file, true);
         setTechForm(prev => ({ ...prev, imageUrl: url }));
         triggerToast("✅ อัปโหลดโลโก้เสร็จสิ้น!");
       } catch (err) {

@@ -221,12 +221,36 @@ export const DEFAULT_ITEMS = [
 ];
 
 export const DEFAULT_CONTACTS = [
-  { id: "c-1", icon: "Mail", label: "Email Address", value: "[ your.email@example.com ]", link: "mailto:your.email@example.com", color: "#00e5ff" },
-  { id: "c-2", icon: "Github", label: "GitHub Profile", value: "[ github.com/yourusername ]", link: "https://github.com", color: "#a855f7" },
-  { id: "c-3", icon: "Linkedin", label: "LinkedIn Profile", value: "[ linkedin.com/in/yourname ]", link: "https://linkedin.com", color: "#3b82f6" },
-  { id: "c-4", icon: "Instagram", label: "Instagram", value: "[ @your_instagram ]", link: "https://instagram.com", color: "#ec4899" },
-  { id: "c-5", icon: "MapPin", label: "Location", value: "[ กรุงเทพมหานคร, ประเทศไทย ]", link: "#", color: "#10b981" }
+  { id: "c-github", icon: "Github", label: "GITHUB", value: "https://github.com/tainlnwza", link: "https://github.com/tainlnwza", color: "#6e5494" },
+  { id: "c-facebook", icon: "Facebook", label: "FACEBOOK", value: "https://www.facebook.com/metichai.boonma", link: "https://www.facebook.com/metichai.boonma", color: "#1877F2" },
+  { id: "c-instagram", icon: "Instagram", label: "INSTAGRAM", value: "cxptxinn._", link: "https://instagram.com/cxptxinn._", color: "#E1306C" },
+  { id: "c-email", icon: "Mail", label: "EMAIL", value: "metichaiboonma0007@gmail.com", link: "mailto:metichaiboonma0007@gmail.com", color: "#00d2ff" },
+  { id: "c-phone", icon: "Phone", label: "PHONE", value: "098-032-2142", link: "tel:0980322142", color: "#0055ff" },
+  { id: "c-line", icon: "MessageCircle", label: "LINE ID", value: "captain0007", link: "#", color: "#06C755" }
 ];
+
+export const CONTACT_ORDER = ["github", "facebook", "instagram", "email", "phone", "lineid"];
+
+export const getContactType = (c) => {
+  if (!c) return "other";
+  const str = `${c.icon || ""} ${c.label || ""} ${c.id || ""}`.toLowerCase();
+  if (str.includes("github")) return "github";
+  if (str.includes("facebook")) return "facebook";
+  if (str.includes("instagram") || str.includes("ig")) return "instagram";
+  if (str.includes("email") || str.includes("mail")) return "email";
+  if (str.includes("phone") || str.includes("tel")) return "phone";
+  if (str.includes("line")) return "lineid";
+  return "other";
+};
+
+export const sortContacts = (contactsList) => {
+  if (!Array.isArray(contactsList)) return [];
+  return [...contactsList].sort((a, b) => {
+    const idxA = CONTACT_ORDER.indexOf(getContactType(a));
+    const idxB = CONTACT_ORDER.indexOf(getContactType(b));
+    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+  });
+};
 
 // Helper สำหรับ LocalStorage
 const getLocal = (key, fallback) => {
@@ -300,9 +324,70 @@ const ensureInitialized = () => {
 
 /* ==========================================================================
    ฟังก์ชันช่วยบีบอัดรูปภาพฝั่ง Client (HTML5 Canvas)
-   เพื่อลดขนาดภาพเหลือไม่เกิน 100KB-150KB ทำให้สามารถเก็บลงใน Firestore ได้ฟรี 100%
+   สำหรับโลโก้ (Education/Experience/Tech): จำกัดขนาดที่ 256px ขนาดไฟล์จะเหลือเพียง ~8KB-18KB
+   สำหรับภาพทั่วไป (Hero, About, Projects): จำกัดขนาดที่ 1000px คุณภาพ 82%-85%
+   ทำให้ประหยัดพื้นที่จัดเก็บใน Firestore ได้มากกว่า 90% และไม่มีปัญหาเกินโควตา 1MB
    ========================================================================== */
-const compressImageToBase64 = (file) => {
+export const compressBase64String = (base64Str, maxDim = 256, quality = 0.88) => {
+  return new Promise((resolve) => {
+    if (!base64Str || typeof base64Str !== "string" || !base64Str.startsWith("data:image/")) {
+      return resolve(base64Str);
+    }
+    // หากขนาดสั้นกว่า 30,000 ตัวอักษร (ประมาณ < 22KB) แสดงว่าขนาดกะทัดรัดอยู่แล้ว
+    if (base64Str.length < 30000) {
+      return resolve(base64Str);
+    }
+
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, width, height);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, width, height);
+
+        try {
+          const webpData = canvas.toDataURL("image/webp", quality);
+          if (webpData.startsWith("data:image/webp") && webpData.length < base64Str.length) {
+            return resolve(webpData);
+          }
+        } catch (e) {
+          // fallback
+        }
+
+        const pngData = canvas.toDataURL("image/png");
+        if (pngData.length < base64Str.length) {
+          return resolve(pngData);
+        }
+        resolve(base64Str);
+      } catch (err) {
+        resolve(base64Str);
+      }
+    };
+    img.onerror = () => resolve(base64Str);
+  });
+};
+
+const compressImageToBase64 = (file, isLogo = false) => {
   return new Promise((resolve, reject) => {
     // 1. ตรวจสอบประเภทไฟล์
     const isPng = file.type === "image/png" || file.name?.toLowerCase().endsWith(".png");
@@ -321,15 +406,10 @@ const compressImageToBase64 = (file) => {
       const img = new Image();
       img.src = event.target.result;
       img.onload = () => {
-        // หากเป็นไฟล์ PNG หรือ WebP ที่ขนาดไฟล์ไม่เกิน 650KB และขนาดภาพไม่เกิน 1600px
-        // ให้ใช้ไฟล์เดิมได้ทันทีเพื่อรักษาความโปร่งใส (Alpha Transparency) และความคมชัด 100%
-        if ((isPng || isWebp) && file.size < 650 * 1024 && img.width <= 1600 && img.height <= 1600) {
-          return resolve(event.target.result);
-        }
-
         const canvas = document.createElement("canvas");
-        // ปรับความละเอียดภาพสูงสุด 1600px
-        const MAX_DIMENSION = 1600;
+        // โลโก้แสดงผลไม่เกิน 48px จึงใช้ 256px เพื่อความคมชัดสูงสุดบนหน้าจอ Retina และไฟล์มีขนาดเพียง ~10-20KB
+        // รูปภาพทั่วไปจำกัดที่ 1000px
+        const MAX_DIMENSION = isLogo ? 256 : 1000;
         let width = img.width;
         let height = img.height;
 
@@ -353,32 +433,21 @@ const compressImageToBase64 = (file) => {
         ctx.imageSmoothingQuality = "high";
         ctx.drawImage(img, 0, 0, width, height);
 
-        if (isPng) {
-          // บันทึกเป็น image/png เพื่อรักษาพื้นหลังโปร่งใส 100%
-          let compressedBase64 = canvas.toDataURL("image/png");
-          // หากขนาดใหญ่เกินไปสำหรับเอกสาร Firestore (> 850KB = ~850,000 ตัวอักษร)
-          // ให้แปลงเป็น WebP คุณภาพสูง ซึ่งรองรับ Transparency เช่นกัน แต่ขนาดไฟล์กะทัดรัดกว่า
-          if (compressedBase64.length > 850000) {
-            try {
-              const webpData = canvas.toDataURL("image/webp", 0.92);
-              if (webpData.startsWith("data:image/webp") && webpData.length < compressedBase64.length) {
-                compressedBase64 = webpData;
-              }
-            } catch (err) {
-              console.warn("WebP fallback to PNG:", err);
+        // สำหรับโลโก้หรือไฟล์ที่มีความโปร่งใส ให้ลองส่งออกเป็น WebP ก่อนเพื่อขนาดที่เล็กที่สุดแต่คง Alpha
+        if (isLogo || isPng || isWebp) {
+          try {
+            const webpData = canvas.toDataURL("image/webp", isLogo ? 0.90 : 0.85);
+            if (webpData.startsWith("data:image/webp")) {
+              return resolve(webpData);
             }
+          } catch (e) {
+            // fallback
           }
-          return resolve(compressedBase64);
+          return resolve(canvas.toDataURL("image/png"));
         }
 
-        if (isWebp) {
-          // บันทึกเป็น image/webp เพื่อรักษาพื้นหลังโปร่งใส
-          const compressedBase64 = canvas.toDataURL("image/webp", 0.90);
-          return resolve(compressedBase64);
-        }
-
-        // กรณีรูปภาพทั่วไป (JPG / JPEG) บันทึกด้วยคุณภาพ 88%
-        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.88);
+        // กรณีรูปภาพทั่วไป (JPG / JPEG) บันทึกด้วยคุณภาพ 82%
+        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.82);
         resolve(compressedBase64);
       };
       img.onerror = (err) => reject(err);
@@ -433,10 +502,52 @@ export const getHeroData = async () => {
 };
 
 export const updateHeroData = async (data) => {
+  // 1. ลบฟิลด์ซ้ำซ้อนที่ไม่จำเป็น เช่น imageUrl ซ้ำกับ heroImageUrl เพื่อประหยัดพื้นที่ Firestore
   const mergedData = {
     ...data,
     bio: data.homeBio || data.aboutBio || data.bio || ""
   };
+  if (mergedData.heroImageUrl) {
+    delete mergedData.imageUrl;
+  }
+
+  // 2. ตรวจสอบและลดขนาดโลโก้ใน education, experience และ techStack ไม่ให้เกิน 256px
+  if (Array.isArray(mergedData.education)) {
+    mergedData.education = await Promise.all(
+      mergedData.education.map(async (edu) => {
+        if (edu.imageUrl && edu.imageUrl.length > 35000) {
+          const compressed = await compressBase64String(edu.imageUrl, 256, 0.88);
+          return { ...edu, imageUrl: compressed };
+        }
+        return edu;
+      })
+    );
+  }
+
+  if (Array.isArray(mergedData.experience)) {
+    mergedData.experience = await Promise.all(
+      mergedData.experience.map(async (exp) => {
+        if (exp.imageUrl && exp.imageUrl.length > 35000) {
+          const compressed = await compressBase64String(exp.imageUrl, 256, 0.88);
+          return { ...exp, imageUrl: compressed };
+        }
+        return exp;
+      })
+    );
+  }
+
+  if (Array.isArray(mergedData.techStack)) {
+    mergedData.techStack = await Promise.all(
+      mergedData.techStack.map(async (tech) => {
+        if (tech.imageUrl && tech.imageUrl.length > 35000) {
+          const compressed = await compressBase64String(tech.imageUrl, 256, 0.88);
+          return { ...tech, imageUrl: compressed };
+        }
+        return tech;
+      })
+    );
+  }
+
   if (isFirebaseConfigured) {
     await setDoc(doc(db, "settings", "hero"), mergedData);
   } else {
@@ -583,13 +694,13 @@ export const getContactData = async () => {
     try {
       const snap = await getDocs(collection(db, "contacts"));
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      return list.sort((a, b) => a.id.localeCompare(b.id));
+      return sortContacts(list);
     } catch (e) {
       console.error(e);
       return [];
     }
   } else {
-    return getLocal("folio_contacts", []);
+    return sortContacts(getLocal("folio_contacts", []));
   }
 };
 
@@ -600,7 +711,8 @@ export const updateContactData = async (contacts) => {
         icon: c.icon,
         label: c.label,
         value: c.value,
-        color: c.color || "#00d2ff"
+        color: c.color || "#00d2ff",
+        link: c.link || ""
       });
     }
   } else {
@@ -637,7 +749,7 @@ export const updateCustomCss = async (css) => {
 /* ==========================================================================
    6. FILE UPLOAD FUNCTION (Supports images & PDF files as Base64)
    ========================================================================== */
-export const uploadImage = async (file) => {
+export const uploadImage = async (file, isLogo = false) => {
   if (file) {
     try {
       // ตรวจสอบว่าเป็นไฟล์ PDF หรือไม่
@@ -652,8 +764,8 @@ export const uploadImage = async (file) => {
         });
       }
       
-      // กรณีรูปภาพ ให้ผ่านระบบบีบอัดรูปภาพฝั่งเบราว์เซอร์เพื่อลดขนาดพื้นที่
-      const base64Image = await compressImageToBase64(file);
+      // กรณีรูปภาพ ให้ผ่านระบบบีบอัดรูปภาพฝั่งเบราว์เซอร์เพื่อลดขนาดพื้นที่ (โลโก้จำกัดที่ 256px)
+      const base64Image = await compressImageToBase64(file, isLogo);
       return base64Image;
     } catch (error) {
       console.error("Error uploading/compressing file:", error);

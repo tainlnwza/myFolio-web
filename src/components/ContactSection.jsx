@@ -23,61 +23,95 @@ export default function ContactSection({ contacts = [] }) {
     }, 1000);
   };
 
-  const defaultContacts = contacts.length > 0 ? contacts : [
+  const defaultContactsFallback = [
     {
-      id: "c-1",
-      icon: "Mail",
-      label: "EMAIL",
-      value: "somchai.rakdee@example.com",
-      link: "mailto:somchai.rakdee@example.com",
-      color: "#00e5ff"
-    },
-    {
-      id: "c-2",
-      icon: "Phone",
-      label: "PHONE",
-      value: "089-123-4567",
-      link: "tel:0891234567",
-      color: "#3b82f6"
-    },
-    {
-      id: "c-3",
+      id: "c-github",
       icon: "Github",
       label: "GITHUB",
-      value: "github.com/somchairakdee",
-      link: "https://github.com/somchairakdee",
-      color: "#a855f7"
+      value: "https://github.com/tainlnwza",
+      link: "https://github.com/tainlnwza",
+      color: "#6e5494"
     },
     {
-      id: "c-4",
+      id: "c-facebook",
       icon: "Facebook",
       label: "FACEBOOK",
-      value: "facebook.com/somchairakdee",
-      link: "https://facebook.com/somchairakdee",
-      color: "#3b82f6"
+      value: "https://www.facebook.com/metichai.boonma",
+      link: "https://www.facebook.com/metichai.boonma",
+      color: "#1877F2"
     },
     {
-      id: "c-5",
-      icon: "MessageCircle",
-      label: "LINE ID",
-      value: "somchai_line",
-      link: "#",
-      color: "#10b981"
-    },
-    {
-      id: "c-6",
+      id: "c-instagram",
       icon: "Instagram",
       label: "INSTAGRAM",
-      value: "@somchairakdee",
-      link: "https://instagram.com/somchairakdee",
-      color: "#ec4899"
+      value: "cxptxinn._",
+      link: "https://instagram.com/cxptxinn._",
+      color: "#E1306C"
+    },
+    {
+      id: "c-email",
+      icon: "Mail",
+      label: "EMAIL",
+      value: "metichaiboonma0007@gmail.com",
+      link: "mailto:metichaiboonma0007@gmail.com",
+      color: "#00d2ff"
+    },
+    {
+      id: "c-phone",
+      icon: "Phone",
+      label: "PHONE",
+      value: "098-032-2142",
+      link: "tel:0980322142",
+      color: "#0055ff"
+    },
+    {
+      id: "c-line",
+      icon: "MessageCircle",
+      label: "LINE ID",
+      value: "captain0007",
+      link: "#",
+      color: "#06C755"
     }
   ];
+
+  const getContactType = (c) => {
+    if (!c) return "other";
+    const str = `${c.icon || ""} ${c.label || ""} ${c.id || ""}`.toLowerCase();
+    if (str.includes("github")) return "github";
+    if (str.includes("facebook")) return "facebook";
+    if (str.includes("instagram") || str.includes("ig")) return "instagram";
+    if (str.includes("email") || str.includes("mail")) return "email";
+    if (str.includes("phone") || str.includes("tel")) return "phone";
+    if (str.includes("line")) return "lineid";
+    return "other";
+  };
+
+  // ลำดับที่ผู้ใช้กำหนด: github facebook ig email phone lineid
+  const ORDERED_TYPES = ["github", "facebook", "instagram", "email", "phone", "lineid"];
+
+  const rawList = contacts.length > 0 ? contacts : defaultContactsFallback;
+  const sortedContacts = [...rawList].sort((a, b) => {
+    const idxA = ORDERED_TYPES.indexOf(getContactType(a));
+    const idxB = ORDERED_TYPES.indexOf(getContactType(b));
+    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+  });
+
+  const getExternalLink = (contact) => {
+    const val = (contact.value || "").trim();
+    const link = (contact.link || "").trim();
+    if (link && link.startsWith("http")) return link;
+    if (val.startsWith("http://") || val.startsWith("https://")) return val;
+    const type = getContactType(contact);
+    if (type === "github") return `https://github.com/${val.replace(/^@/, "")}`;
+    if (type === "facebook") return val.startsWith("www.") ? `https://${val}` : `https://facebook.com/${val}`;
+    if (type === "instagram") return `https://instagram.com/${val.replace(/^@/, "")}`;
+    return link || "#";
+  };
 
   return (
     <section id="contact" className="contact-section">
       
-      {/* Section Header: ลบ CONTACT & CONNECT และคำอธิบายย่อยตามภาพแนบที่ 4 */}
+      {/* Section Header */}
       <div className="section-header-block scroll-reveal">
         <h2 className="section-main-title">
           ช่องทาง<span>การติดต่อ</span>
@@ -94,14 +128,38 @@ export default function ContactSection({ contacts = [] }) {
           </h3>
 
           <div className="contact-cards-list">
-            {defaultContacts.map((contact) => {
+            {sortedContacts.map((contact) => {
+              const type = getContactType(contact);
+              // ลิงก์ที่กดแล้วไปยังเว็บได้เหลือแค่ github, facebook, ig ส่วนอันอื่นแค่แสดงไว้
+              const isClickable = type === "github" || type === "facebook" || type === "instagram";
+              const targetUrl = isClickable ? getExternalLink(contact) : null;
+
+              if (isClickable) {
+                return (
+                  <a
+                    key={contact.id}
+                    href={targetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="contact-info-card is-link group"
+                    style={{ "--card-accent": contact.color || "#00e5ff" }}
+                  >
+                    <div className="contact-card-icon-box">
+                      <SafeIcon name={contact.icon || contact.label} size={22} />
+                    </div>
+                    <div className="contact-card-text">
+                      <span className="contact-card-label">{contact.label}</span>
+                      <span className="contact-card-value">{contact.value}</span>
+                    </div>
+                    <Icons.ArrowUpRight size={16} className="contact-card-arrow" />
+                  </a>
+                );
+              }
+
               return (
-                <a
+                <div
                   key={contact.id}
-                  href={contact.value?.startsWith("http") ? contact.value : contact.link || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="contact-info-card group"
+                  className="contact-info-card is-display-only"
                   style={{ "--card-accent": contact.color || "#00e5ff" }}
                 >
                   <div className="contact-card-icon-box">
@@ -111,8 +169,7 @@ export default function ContactSection({ contacts = [] }) {
                     <span className="contact-card-label">{contact.label}</span>
                     <span className="contact-card-value">{contact.value}</span>
                   </div>
-                  <Icons.ArrowUpRight size={16} className="contact-card-arrow" />
-                </a>
+                </div>
               );
             })}
           </div>
