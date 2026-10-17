@@ -143,7 +143,11 @@ export default function PortfolioSection({
             setSelectedProject(null);
             setTimeout(() => {
               const el = document.getElementById("portfolio");
-              if (el) el.scrollIntoView({ behavior: "smooth" });
+              if (el) {
+                const yOffset = -90;
+                const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+              }
             }, 50);
           }} 
         />
@@ -155,14 +159,14 @@ export default function PortfolioSection({
     <section id="portfolio" className="portfolio-section">
       
       {/* Section Header */}
-      <div className="section-header-block portfolio-header-block scroll-reveal">
+      <div className="section-header-block portfolio-header-block">
         <h2 className="section-main-title portfolio-main-title">
           ผลงานและ<span className="headline-gradient">ความสำเร็จ</span>
         </h2>
       </div>
 
       {/* Filter Tabs Navigation (แถบ 4 ช่องเท่ากัน กระจายเต็มความกว้างตามภาพแนบที่ 2) */}
-      <div className="portfolio-tabs-container scroll-reveal">
+      <div className="portfolio-tabs-container">
         <div className="portfolio-tabs-nav-modern">
           {tabs.map((tab) => {
             const IconComp = Icons[tab.icon] || Icons.Circle;
@@ -397,10 +401,11 @@ export default function PortfolioSection({
               e.stopPropagation();
               setLightboxImage(null);
             }}
-            title="ปิดภาพขยาย (หรือกด Esc)"
+            title="ปิดภาพขยาย (Esc)"
             id="lightbox-close-button"
+            aria-label="Close"
           >
-            <Icons.X size={26} />
+            <Icons.X size={32} />
           </button>
 
           {/* กล่องแสดงภาพขยายขนาดใหญ่ */}

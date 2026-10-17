@@ -128,7 +128,7 @@ const PublicPage = () => {
       revealElements.forEach((el) => observer.unobserve(el));
       observer.disconnect();
     };
-  }, [hero, items, categories]);
+  }, [hero, items, categories, selectedProject]);
 
   if (!hero) {
     return (
@@ -152,7 +152,18 @@ const PublicPage = () => {
               window.scrollTo({ top: 0, behavior: "instant" });
               setTimeout(() => {
                 const el = document.getElementById("portfolio");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
+                if (el) {
+                  const yOffset = -90;
+                  const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                  window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+                }
+                // กระตุ้นให้อนิเมชั่น scroll-reveal แสดงผลองค์ประกอบที่อยู่ในหน้าจอทันที
+                document.querySelectorAll(".scroll-reveal").forEach((elem) => {
+                  const rect = elem.getBoundingClientRect();
+                  if (rect.top < window.innerHeight + 100) {
+                    elem.classList.add("revealed");
+                  }
+                });
               }, 60);
             }} 
           />
@@ -245,8 +256,10 @@ const AdminPage = ({ setGlobalCustomCss }) => {
   const [itemForm, setItemForm] = useState({ 
     title: "", 
     description: "", 
+    detailDescription: "",
     categoryId: "", 
     imageUrl: "", 
+    detailImages: [],
     tags: "", 
     demoUrl: "", 
     githubUrl: "", 
@@ -951,6 +964,7 @@ const AdminPage = ({ setGlobalCustomCss }) => {
       setItemForm({
         title: item.title || "",
         description: item.description || "",
+        detailDescription: item.detailDescription || item.description || "",
         categoryId: item.categoryId || categories[0]?.id || "",
         imageUrl: item.imageUrl || "",
         detailImages: Array.isArray(item.detailImages) ? [...item.detailImages] : [],
@@ -964,6 +978,7 @@ const AdminPage = ({ setGlobalCustomCss }) => {
       setItemForm({
         title: "",
         description: "",
+        detailDescription: "",
         categoryId: categories[0]?.id || "",
         imageUrl: "",
         detailImages: [],
@@ -1005,6 +1020,7 @@ const AdminPage = ({ setGlobalCustomCss }) => {
       const payload = {
         title: itemForm.title,
         description: itemForm.description,
+        detailDescription: itemForm.detailDescription || itemForm.description,
         categoryId: itemForm.categoryId,
         imageUrl: finalImageUrl,
         detailImages: itemForm.detailImages || [],
@@ -2232,14 +2248,28 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                   </div>
                 </div>
 
+                {/* คำอธิบายสั้นสำหรับแสดงบนการ์ดหน้าแรก (ข้อ 2 ตามภาพแนบที่ 2) */}
                 <div className="form-group">
-                  <label>คำอธิบายรายละเอียด</label>
+                  <label>คำอธิบายสั้น (แสดงที่การ์ดหน้าแรก)</label>
                   <textarea 
                     className="form-control" 
-                    rows={4}
+                    rows={2}
+                    placeholder="คำอธิบายสรุปสั้นๆ สำหรับแสดงบนการ์ดผลงานในหน้าแรก..."
                     value={itemForm.description} 
                     onChange={e => setItemForm(prev => ({ ...prev, description: e.target.value }))} 
                     required 
+                  />
+                </div>
+
+                {/* คำอธิบายรายละเอียดเพิ่มเติมสำหรับแสดงในหน้ารายละเอียด (ข้อ 2 ตามภาพแนบที่ 2) */}
+                <div className="form-group">
+                  <label>คำอธิบายรายละเอียดเพิ่มเติม (แสดงในหน้ารายละเอียด)</label>
+                  <textarea 
+                    className="form-control" 
+                    rows={5}
+                    placeholder="คำอธิบายเชิงลึก รายละเอียดฟังก์ชัน หรือกระบวนการพัฒนาสำหรับแสดงในหน้ารายละเอียดโปรเจกต์..."
+                    value={itemForm.detailDescription} 
+                    onChange={e => setItemForm(prev => ({ ...prev, detailDescription: e.target.value }))} 
                   />
                 </div>
               </div>

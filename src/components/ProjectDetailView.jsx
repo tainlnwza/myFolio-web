@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import * as Icons from "lucide-react";
 
 // Safe SVG Icons for GitHub and External Link
@@ -19,6 +20,30 @@ export default function ProjectDetailView({ project, onBack }) {
     : (project.imageUrl ? [project.imageUrl] : []);
 
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [lightboxImage, setLightboxImage] = useState(null);
+
+  // ปิด Lightbox เมื่อกดปุ่ม Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setLightboxImage(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // ล็อค Scroll ของหน้าจอเมื่อขยายรูปภาพ
+  useEffect(() => {
+    if (lightboxImage) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [lightboxImage]);
 
   if (!project) return null;
 
@@ -51,15 +76,16 @@ export default function ProjectDetailView({ project, onBack }) {
         </div>
       </div>
 
-      {/* Main 2-Column Content Layout (ตามตัวอย่างในภาพแนบที่ 2) */}
+      {/* Main 2-Column Content Layout */}
       <div className="project-detail-grid">
         
         {/* Left Column: Project Title, Description, Tech Stack & Action Links */}
         <div className="project-detail-info-col">
           <h1 className="project-detail-title">{project.title}</h1>
 
+          {/* คำอธิบายรายละเอียดเพิ่มเติม (แยกกับคำอธิบายสั้นบนการ์ดหน้าแรกตามข้อ 2) */}
           <p className="project-detail-description">
-            {project.description || "รายละเอียดผลงานโปรเจกต์..."}
+            {project.detailDescription || project.description || "รายละเอียดผลงานโปรเจกต์..."}
           </p>
 
           {/* Technologies Used Section */}
@@ -109,17 +135,32 @@ export default function ProjectDetailView({ project, onBack }) {
           </div>
         </div>
 
-        {/* Right Column: Project Detail Images Showcase (สามารถสลับดูหลายภาพได้) */}
+        {/* Right Column: Project Detail Images Showcase (สามารถสลับดูหลายภาพได้ และคลิกเพื่อขยายดูภาพได้ตามข้อ 3) */}
         <div className="project-detail-visual-col">
           <div className="project-detail-card-frame">
             {detailImages.length > 0 ? (
               <div className="detail-image-showcase">
-                <div className="detail-main-image-wrap">
+                <div 
+                  className="detail-main-image-wrap clickable-lightbox-trigger"
+                  onClick={() => setLightboxImage(detailImages[activeImageIdx] || detailImages[0])}
+                  title="คลิกเพื่อดูภาพขยาย"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      setLightboxImage(detailImages[activeImageIdx] || detailImages[0]);
+                    }
+                  }}
+                >
                   <img
                     src={detailImages[activeImageIdx] || detailImages[0]}
                     alt={`${project.title} screenshot ${activeImageIdx + 1}`}
                     className="detail-main-img"
                   />
+                  <div className="detail-img-zoom-badge">
+                    <Icons.Maximize2 size={14} />
+                    <span>คลิกเพื่อดูภาพขยาย</span>
+                  </div>
                 </div>
 
                 {/* Thumbnail switcher if multiple detail images exist */}
@@ -149,6 +190,43 @@ export default function ProjectDetailView({ project, onBack }) {
         </div>
 
       </div>
+
+      {/* Lightbox Modal: ขยายดูรูปภาพหน้ารายละเอียด พร้อมปุ่ม X เรียบง่าย ไม่มีสีและอนิเมชั่นหมุน/ย่อขยาย ตามข้อ 3 & 4 */}
+      {lightboxImage && typeof document !== "undefined" && createPortal(
+        <div 
+          className="lightbox-backdrop" 
+          onClick={() => setLightboxImage(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button 
+            type="button" 
+            className="lightbox-close-btn" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxImage(null);
+            }}
+            title="ปิดภาพขยาย (Esc)"
+            id="lightbox-close-button"
+            aria-label="Close"
+          >
+            <Icons.X size={32} />
+          </button>
+
+          <div 
+            className="lightbox-image-container"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={lightboxImage} 
+              alt={`${project.title} Screenshot Preview`} 
+              className="lightbox-enlarged-img" 
+            />
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
+

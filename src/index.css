@@ -1243,11 +1243,25 @@ section {
 /* ==========================================================================
    3. PORTFOLIO & SHOWCASE SECTION
    ========================================================================== */
+#portfolio,
+.portfolio-section {
+  scroll-margin-top: 90px;
+}
+
+.portfolio-header-block {
+  opacity: 1 !important;
+  transform: none !important;
+  visibility: visible !important;
+}
+
 .portfolio-tabs-container {
   display: flex;
   justify-content: center;
   margin-bottom: 3rem;
   width: 100%;
+  opacity: 1 !important;
+  transform: none !important;
+  visibility: visible !important;
 }
 
 /* Modern Capsule Bar matching Attachment 1 & 2: Widen to full width and distribute 4 equal tabs */
@@ -3095,8 +3109,9 @@ section {
 }
 
 /* ==========================================================================
-   LIGHTBOX MODAL (ดูภาพขยาย และกด X มุมขวาบน ตามภาพแนบที่ 3 และ 5)
+   LIGHTBOX MODAL (ดูภาพขยาย และกด X มุมขวาบน ตามภาพแนบที่ 3 และ 4)
    อยู่ Layer หน้าสุด (z-index สูงสุด) แสดงเฉพาะรูปภาพและปุ่ม X ปิดเท่านั้น
+   ลบอนิเมชั่นและสีออก ให้เหลือเฉพาะปุ่ม X เรียบง่ายตามข้อ 4
    ========================================================================== */
 .lightbox-backdrop {
   position: fixed !important;
@@ -3109,37 +3124,37 @@ section {
   align-items: center !important;
   justify-content: center !important;
   padding: 1.5rem !important;
-  animation: lightboxFadeIn 0.25s ease;
 }
 
-@keyframes lightboxFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
+/* ปุ่มปิด X: ลบสีแดง วงกลมพื้นหลัง และอนิเมชั่นหมุน/ขยายออก ให้เหลือแค่ไอคอน X เพื่อปิดเท่านั้นตามข้อ 4 */
 .lightbox-close-btn {
   position: fixed !important;
   top: 1.5rem !important;
   right: 1.5rem !important;
-  width: 48px !important;
-  height: 48px !important;
-  border-radius: 50% !important;
-  background: rgba(255, 255, 255, 0.12) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
   color: #ffffff !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
-  transition: all 0.2s ease !important;
   z-index: 100000000 !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: opacity 0.15s ease !important;
+  padding: 0 !important;
+  outline: none !important;
 }
 
 .lightbox-close-btn:hover {
-  background: rgba(239, 68, 68, 0.95) !important;
-  border-color: #ef4444 !important;
-  transform: scale(1.1) rotate(90deg) !important;
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  transform: none !important;
+  opacity: 0.65 !important;
 }
 
 .lightbox-image-container {
@@ -3149,27 +3164,48 @@ section {
   align-items: center !important;
   justify-content: center !important;
   z-index: 99999999 !important;
-  animation: lightboxScaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-@keyframes lightboxScaleUp {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
 }
 
 .lightbox-enlarged-img {
   max-width: 100% !important;
   max-height: 88vh !important;
   object-fit: contain !important;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 50px rgba(56, 189, 248, 0.25) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Project Detail Zoom Trigger & Badge */
+.clickable-lightbox-trigger {
+  position: relative !important;
+  cursor: zoom-in !important;
+}
+
+.detail-img-zoom-badge {
+  position: absolute;
+  bottom: 0.85rem;
+  right: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(10, 18, 36, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+
+.clickable-lightbox-trigger:hover .detail-img-zoom-badge {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: #38bdf8;
+  color: #ffffff;
 }
 
 /* Standalone Project Detail Page Mode */
