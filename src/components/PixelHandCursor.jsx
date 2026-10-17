@@ -1,0 +1,50 @@
+import React from "react";
+
+/**
+ * PixelHandCursor Component
+ * เรนเดอร์เคอร์เซอร์มือพิกเซลอาร์ต (Retro 8-bit Hand Pointer Cursor) สไตล์ภาพแนบที่ 3
+ * ลายเส้นคมชัดแบบ Vector SVG pixel-perfect ไม่มีขอบเทียม
+ */
+export default function PixelHandCursor({ 
+  direction = "tilted-down", 
+  size = 32, 
+  className = "" 
+}) {
+  // ข้อมูลพิกเซลสีดำ (Black Border / Outline)
+  const BLACK_PATH = "M6,0h1v1h-1z M7,0h1v1h-1z M5,1h1v1h-1z M8,1h1v1h-1z M5,2h1v1h-1z M8,2h1v1h-1z M5,3h1v1h-1z M8,3h1v1h-1z M5,4h1v1h-1z M8,4h1v1h-1z M10,4h1v1h-1z M11,4h1v1h-1z M5,5h1v1h-1z M8,5h1v1h-1z M10,5h1v1h-1z M12,5h1v1h-1z M14,5h1v1h-1z M15,5h1v1h-1z M5,6h1v1h-1z M8,6h1v1h-1z M10,6h1v1h-1z M12,6h1v1h-1z M14,6h1v1h-1z M16,6h1v1h-1z M18,6h1v1h-1z M5,7h1v1h-1z M8,7h1v1h-1z M10,7h1v1h-1z M12,7h1v1h-1z M14,7h1v1h-1z M16,7h1v1h-1z M18,7h1v1h-1z M5,8h1v1h-1z M8,8h1v1h-1z M10,8h1v1h-1z M12,8h1v1h-1z M14,8h1v1h-1z M16,8h1v1h-1z M18,8h1v1h-1z M1,9h1v1h-1z M2,9h1v1h-1z M5,9h1v1h-1z M8,9h1v1h-1z M10,9h1v1h-1z M12,9h1v1h-1z M14,9h1v1h-1z M16,9h1v1h-1z M18,9h1v1h-1z M0,10h1v1h-1z M3,10h1v1h-1z M4,10h1v1h-1z M18,10h1v1h-1z M0,11h1v1h-1z M4,11h1v1h-1z M18,11h1v1h-1z M0,12h1v1h-1z M4,12h1v1h-1z M18,12h1v1h-1z M1,13h1v1h-1z M4,13h1v1h-1z M5,13h1v1h-1z M18,13h1v1h-1z M1,14h1v1h-1z M4,14h1v1h-1z M5,14h1v1h-1z M18,14h1v1h-1z M2,15h1v1h-1z M5,15h1v1h-1z M6,15h1v1h-1z M18,15h1v1h-1z M2,16h1v1h-1z M18,16h1v1h-1z M3,17h1v1h-1z M17,17h1v1h-1z M3,18h1v1h-1z M17,18h1v1h-1z M4,19h1v1h-1z M17,19h1v1h-1z M4,20h1v1h-1z M17,20h1v1h-1z M4,21h1v1h-1z M17,21h1v1h-1z M4,22h1v1h-1z M5,22h1v1h-1z M6,22h1v1h-1z M7,22h1v1h-1z M8,22h1v1h-1z M9,22h1v1h-1z M10,22h1v1h-1z M11,22h1v1h-1z M12,22h1v1h-1z M13,22h1v1h-1z M14,22h1v1h-1z M15,22h1v1h-1z M16,22h1v1h-1z";
+  
+  // ข้อมูลพิกเซลสีขาว (White Interior / Fill)
+  const WHITE_PATH = "M6,1h1v1h-1z M7,1h1v1h-1z M6,2h1v1h-1z M7,2h1v1h-1z M6,3h1v1h-1z M7,3h1v1h-1z M6,4h1v1h-1z M7,4h1v1h-1z M6,5h1v1h-1z M7,5h1v1h-1z M11,5h1v1h-1z M6,6h1v1h-1z M7,6h1v1h-1z M11,6h1v1h-1z M15,6h1v1h-1z M6,7h1v1h-1z M7,7h1v1h-1z M11,7h1v1h-1z M15,7h1v1h-1z M6,8h1v1h-1z M7,8h1v1h-1z M11,8h1v1h-1z M15,8h1v1h-1z M6,9h1v1h-1z M7,9h1v1h-1z M11,9h1v1h-1z M15,9h1v1h-1z M1,10h1v1h-1z M2,10h1v1h-1z M5,10h1v1h-1z M6,10h1v1h-1z M7,10h1v1h-1z M8,10h1v1h-1z M9,10h1v1h-1z M10,10h1v1h-1z M11,10h1v1h-1z M12,10h1v1h-1z M13,10h1v1h-1z M14,10h1v1h-1z M15,10h1v1h-1z M16,10h1v1h-1z M1,11h1v1h-1z M2,11h1v1h-1z M3,11h1v1h-1z M5,11h1v1h-1z M6,11h1v1h-1z M7,11h1v1h-1z M8,11h1v1h-1z M9,11h1v1h-1z M10,11h1v1h-1z M11,11h1v1h-1z M12,11h1v1h-1z M13,11h1v1h-1z M14,11h1v1h-1z M15,11h1v1h-1z M16,11h1v1h-1z M1,12h1v1h-1z M2,12h1v1h-1z M3,12h1v1h-1z M5,12h1v1h-1z M6,12h1v1h-1z M7,12h1v1h-1z M8,12h1v1h-1z M9,12h1v1h-1z M10,12h1v1h-1z M11,12h1v1h-1z M12,12h1v1h-1z M13,12h1v1h-1z M14,12h1v1h-1z M15,12h1v1h-1z M16,12h1v1h-1z M2,13h1v1h-1z M3,13h1v1h-1z M6,13h1v1h-1z M7,13h1v1h-1z M8,13h1v1h-1z M9,13h1v1h-1z M10,13h1v1h-1z M11,13h1v1h-1z M12,13h1v1h-1z M13,13h1v1h-1z M14,13h1v1h-1z M15,13h1v1h-1z M16,13h1v1h-1z M2,14h1v1h-1z M3,14h1v1h-1z M6,14h1v1h-1z M7,14h1v1h-1z M8,14h1v1h-1z M9,14h1v1h-1z M10,14h1v1h-1z M11,14h1v1h-1z M12,14h1v1h-1z M13,14h1v1h-1z M14,14h1v1h-1z M15,14h1v1h-1z M16,14h1v1h-1z M3,15h1v1h-1z M4,15h1v1h-1z M7,15h1v1h-1z M8,15h1v1h-1z M9,15h1v1h-1z M10,15h1v1h-1z M11,15h1v1h-1z M12,15h1v1h-1z M13,15h1v1h-1z M14,15h1v1h-1z M15,15h1v1h-1z M16,15h1v1h-1z M3,16h1v1h-1z M4,16h1v1h-1z M5,16h1v1h-1z M6,16h1v1h-1z M7,16h1v1h-1z M8,16h1v1h-1z M9,16h1v1h-1z M10,16h1v1h-1z M11,16h1v1h-1z M12,16h1v1h-1z M13,16h1v1h-1z M14,16h1v1h-1z M15,16h1v1h-1z M16,16h1v1h-1z M4,17h1v1h-1z M5,17h1v1h-1z M6,17h1v1h-1z M7,17h1v1h-1z M8,17h1v1h-1z M9,17h1v1h-1z M10,17h1v1h-1z M11,17h1v1h-1z M12,17h1v1h-1z M13,17h1v1h-1z M14,17h1v1h-1z M15,17h1v1h-1z M4,18h1v1h-1z M5,18h1v1h-1z M6,18h1v1h-1z M7,18h1v1h-1z M8,18h1v1h-1z M9,18h1v1h-1z M10,18h1v1h-1z M11,18h1v1h-1z M12,18h1v1h-1z M13,18h1v1h-1z M14,18h1v1h-1z M15,18h1v1h-1z M5,19h1v1h-1z M6,19h1v1h-1z M7,19h1v1h-1z M8,19h1v1h-1z M9,19h1v1h-1z M10,19h1v1h-1z M11,19h1v1h-1z M12,19h1v1h-1z M13,19h1v1h-1z M14,19h1v1h-1z M15,19h1v1h-1z M5,20h1v1h-1z M6,20h1v1h-1z M7,20h1v1h-1z M8,20h1v1h-1z M9,20h1v1h-1z M10,20h1v1h-1z M11,20h1v1h-1z M12,20h1v1h-1z M13,20h1v1h-1z M14,20h1v1h-1z M15,20h1v1h-1z M5,21h1v1h-1z M6,21h1v1h-1z M7,21h1v1h-1z M8,21h1v1h-1z M9,21h1v1h-1z M10,21h1v1h-1z M11,21h1v1h-1z M12,21h1v1h-1z M13,21h1v1h-1z M14,21h1v1h-1z M15,21h1v1h-1z";
+
+  const height = Math.round((size * 23) / 19);
+
+  let transformValue = "none";
+  if (direction === "tilted-down") {
+    // เอียงชี้ลงเฉียงซ้ายล่างเข้าหาหัวข้อตามภาพแนบที่ 2 (~225 องศา)
+    transformValue = "rotate(225deg)";
+  } else if (direction === "down") {
+    transformValue = "rotate(180deg)";
+  } else if (direction === "tilted-up") {
+    transformValue = "rotate(-18deg)";
+  }
+
+  return (
+    <svg
+      viewBox="0 0 19 23"
+      width={size}
+      height={height}
+      className={`pixel-hand-cursor ${className}`}
+      style={{
+        display: "block",
+        shapeRendering: "crispEdges",
+        transform: transformValue,
+        filter: "drop-shadow(0 2px 8px rgba(0, 229, 255, 0.5)) drop-shadow(0 0 2px rgba(0, 0, 0, 0.95))",
+        transition: "transform 0.25s ease"
+      }}
+      aria-hidden="true"
+    >
+      <path d={WHITE_PATH} fill="#ffffff" />
+      <path d={BLACK_PATH} fill="#000000" />
+    </svg>
+  );
+}

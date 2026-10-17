@@ -3,23 +3,37 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <script>
+    // ยกเลิก Service Worker เก่าที่อาจแคชไฟล์เดิมไว้
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (var i = 0; i < registrations.length; i++) {
+          registrations[i].unregister();
+        }
+      });
+    }
+  </script>
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#030014" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="description"
-    content="My Digital Portfolio & Certificates - แฟ้มสะสมผลงานและเกียรติบัตรออนไลน์สำหรับเก็บรวบรวมใบรับรองและรางวัลต่างๆ" />
-  <meta name="keywords" content="Portfolio, Certificate, Resume, แฟ้มสะสมผลงาน, เกียรติบัตร, พอร์ตโฟลิโอ, สมัครงาน" />
+    content="Digital Portfolio & Certificates Showcase - แฟ้มสะสมผลงาน เกียรติบัตร และทักษะความเชี่ยวชาญทางเทคนิค" />
+  <meta name="keywords" content="Portfolio, Certificate, Resume, Web Developer, พอร์ตโฟลิโอ, ผลงาน, เกียรติบัตร" />
   <meta name="author" content="Portfolio Creator" />
 
   <!-- Open Graph (สำหรับแชร์ลง Social Media) -->
-  <meta property="og:title" content="My Digital Portfolio & Certificates | พอร์ตโฟลิโอและคลังเกียรติบัตรดิจิทัล" />
+  <meta property="og:title" content="Digital Portfolio & Showcase | พอร์ตโฟลิโอและคลังผลงานดิจิทัล" />
   <meta property="og:description"
-    content="คลังรวมผลงาน ความสำเร็จ และเกียรติติดบัตรดิจิทัล ตกแต่งสไตล์ไฮเทคลื่นไหลและรวดเร็ว" />
+    content="แฟ้มสะสมผลงาน เกียรติบัตร และทักษะความเชี่ยวชาญทางเทคนิค ดีไซน์โมเดิร์น Dark Aurora & Glassmorphism" />
   <meta property="og:type" content="website" />
-  <meta property="og:image"
-    content="https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=1200&auto=format&fit=crop&q=80" />
 
-  <title>My Digital Portfolio & Certificates | แฟ้มสะสมผลงานและคลังเกียรติติดบัตรดิจิทัล</title>
+  <title>Digital Portfolio & Showcase | พอร์ตโฟลิโอและคลังผลงาน</title>
 </head>
 
 <body>
