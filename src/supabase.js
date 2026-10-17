@@ -7,12 +7,15 @@ export const SUPABASE_BUCKET_NAME = "database myfolio";
 export const SUPABASE_FOLDER_CERTS_AWARDS = "cer & award";
 export const SUPABASE_FOLDER_ACTIVITIES = "activity pic&clip";
 
-// Read anon key from env or localStorage
+// Supabase Anon Key provided by user
+export const SUPABASE_DEFAULT_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcXpod2Fnd2xpaHpyeGZyZHFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyNDczNzAsImV4cCI6MjEwNzgyMzM3MH0.y8xvNnD2CMIP9FsYO10PefsJ0VjoV9vX9BxkG0XZHVA";
+
+// Read anon key from env or localStorage or fallback to default key
 export const getSupabaseAnonKey = () => {
   return (
     import.meta.env.VITE_SUPABASE_ANON_KEY ||
     localStorage.getItem("folio_supabase_anon_key") ||
-    ""
+    SUPABASE_DEFAULT_ANON_KEY
   );
 };
 
