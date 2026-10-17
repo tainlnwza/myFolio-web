@@ -688,10 +688,10 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     try {
       await updateHeroData(updatedHero);
       setShowTimelineModal(false);
-      triggerToast(editingTimelineId ? "💾 แก้ไขข้อมูลเรียบร้อย!" : "➕ เพิ่มข้อมูลใหม่เรียบร้อย!");
+      triggerToast(editingTimelineId ? "💾 บันทึกการแก้ไขเรียบร้อยแล้ว!" : "➕ เพิ่มรายการเรียบร้อยแล้ว!");
     } catch (err) {
-      console.error(err);
-      triggerToast("❌ เกิดข้อผิดพลาดในการบันทึก");
+      console.error("Save timeline error:", err);
+      triggerToast(`❌ เกิดข้อผิดพลาดในการบันทึก: ${err.message || ""}`);
     }
   };
 
@@ -2775,9 +2775,23 @@ const AdminPage = ({ setGlobalCustomCss }) => {
                         </button>
                       )}
                       <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0.35rem 0 0 0" }}>
-                        รูปภาพจะแสดงในกล่องสี่เหลี่ยมด้านหน้าข้อความตามภาพแนบ 4 (แนะนำภาพสี่เหลี่ยมจัตุรัส 1:1)
+                        ระบบบีบอัดภาพให้อัตโนมัติ (บันทึกเข้าฐานข้อมูลได้ทันทีโดยไม่ต้องเชื่อมต่อ Supabase)
                       </p>
                     </div>
+                  </div>
+
+                  <div style={{ marginTop: "0.75rem" }}>
+                    <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.25rem", display: "block" }}>
+                      หรือวางลิงก์ URL รูปภาพโลโก้โดยตรง:
+                    </label>
+                    <input 
+                      type="url" 
+                      className="form-control" 
+                      placeholder="https://.../logo.png" 
+                      value={timelineForm.imageUrl && !timelineForm.imageUrl.startsWith("data:") ? timelineForm.imageUrl : ""} 
+                      onChange={e => setTimelineForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                      style={{ fontSize: "0.85rem", padding: "0.4rem 0.6rem" }}
+                    />
                   </div>
                 </div>
 

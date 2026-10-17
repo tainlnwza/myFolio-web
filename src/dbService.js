@@ -459,9 +459,9 @@ const compressImageToBase64 = (file, isLogo = false) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        // โลโก้แสดงผลไม่เกิน 48px จึงใช้ 256px เพื่อความคมชัดสูงสุดบนหน้าจอ Retina และไฟล์มีขนาดเพียง ~10-20KB
+        // โลโก้แสดงผลไม่เกิน 48px จึงใช้ 160px เพื่อความคมชัดสูงสุดบนหน้าจอ Retina และไฟล์มีขนาดเพียง ~3-8KB
         // รูปภาพทั่วไปจำกัดที่ 1000px
-        const MAX_DIMENSION = isLogo ? 256 : 1000;
+        const MAX_DIMENSION = isLogo ? 160 : 1000;
         let width = img.width;
         let height = img.height;
 
@@ -597,13 +597,16 @@ export const updateHeroData = async (data) => {
   if (mergedData.heroImageUrl) {
     delete mergedData.imageUrl;
   }
+  // ลบฟิลด์เก่าที่ไม่จำเป็น เพื่อประหยัดพื้นที่ Firestore ให้ไม่เกินเพดาน 1MB
+  delete mergedData.awards;
+  delete mergedData.certificates;
 
-  // 2. ตรวจสอบและลดขนาดโลโก้ใน education, experience และ techStack ไม่ให้เกิน 256px
+  // 2. ตรวจสอบและลดขนาดโลโก้ใน education, experience และ techStack ไม่ให้เกิน 160px
   if (Array.isArray(mergedData.education)) {
     mergedData.education = await Promise.all(
       mergedData.education.map(async (edu) => {
-        if (edu.imageUrl && edu.imageUrl.length > 35000) {
-          const compressed = await compressBase64String(edu.imageUrl, 256, 0.88);
+        if (edu.imageUrl && edu.imageUrl.length > 15000 && edu.imageUrl.startsWith("data:")) {
+          const compressed = await compressBase64String(edu.imageUrl, 160, 0.85);
           return { ...edu, imageUrl: compressed };
         }
         return edu;
@@ -614,8 +617,8 @@ export const updateHeroData = async (data) => {
   if (Array.isArray(mergedData.experience)) {
     mergedData.experience = await Promise.all(
       mergedData.experience.map(async (exp) => {
-        if (exp.imageUrl && exp.imageUrl.length > 35000) {
-          const compressed = await compressBase64String(exp.imageUrl, 256, 0.88);
+        if (exp.imageUrl && exp.imageUrl.length > 15000 && exp.imageUrl.startsWith("data:")) {
+          const compressed = await compressBase64String(exp.imageUrl, 160, 0.85);
           return { ...exp, imageUrl: compressed };
         }
         return exp;
@@ -626,8 +629,8 @@ export const updateHeroData = async (data) => {
   if (Array.isArray(mergedData.techStack)) {
     mergedData.techStack = await Promise.all(
       mergedData.techStack.map(async (tech) => {
-        if (tech.imageUrl && tech.imageUrl.length > 35000) {
-          const compressed = await compressBase64String(tech.imageUrl, 256, 0.88);
+        if (tech.imageUrl && tech.imageUrl.length > 15000 && tech.imageUrl.startsWith("data:")) {
+          const compressed = await compressBase64String(tech.imageUrl, 160, 0.85);
           return { ...tech, imageUrl: compressed };
         }
         return tech;
