@@ -3,35 +3,44 @@ import { createPortal } from "react-dom";
 import * as Icons from "lucide-react";
 import PlaceholderImage from "./PlaceholderImage";
 import { GithubIcon } from "./SocialIcons";
-import { DEFAULT_TECH_STACK, DEFAULT_CERTIFICATES, DEFAULT_AWARDS } from "../dbService";
+import { 
+  DEFAULT_TECH_STACK, 
+  DEFAULT_ACTIVITIES,
+  DEFAULT_CERTIFICATES, 
+  DEFAULT_AWARDS,
+  getYouTubeId,
+  getVimeoId,
+  isVideoMedia
+} from "../dbService";
 import ProjectDetailView from "./ProjectDetailView";
 
 export default function PortfolioSection({ 
   items = [], 
   categories = [], 
   techStack = [], 
+  activities = [],
   certificates = [], 
   awards = [],
   onSelectProject
 }) {
   const [activeTab, setActiveTab] = useState("projects");
   const [selectedProject, setSelectedProject] = useState(null);
-  const [lightboxImage, setLightboxImage] = useState(null);
+  const [lightboxMedia, setLightboxMedia] = useState(null);
 
   // ปิด Lightbox เมื่อกดปุ่ม Escape บนคีย์บอร์ด
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
-        setLightboxImage(null);
+        setLightboxMedia(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // ล็อค Scroll ของหน้าจอเมื่อเปิด Lightbox ขยายภาพ
+  // ล็อค Scroll ของหน้าจอเมื่อเปิด Lightbox ขยายสื่อ
   useEffect(() => {
-    if (lightboxImage) {
+    if (lightboxMedia) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -39,13 +48,12 @@ export default function PortfolioSection({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [lightboxImage]);
+  }, [lightboxMedia]);
 
-  // แท็บ 4 หมวดหมู่ตามภาพแนบที่ 2: ไอคอนอยู่บน ข้อความอยู่ล่าง กระจายเต็มความกว้าง
+  // รวม cer กับ award เป็น Activities: 3 หมวดหมู่ (Projects, Activities, Tech Stack)
   const tabs = [
     { id: "projects", label: "Projects", icon: "Code2" },
-    { id: "certificates", label: "Certificates", icon: "Award" },
-    { id: "awards", label: "Awards", icon: "Trophy" },
+    { id: "activities", label: "Activities", icon: "Sparkles" },
     { id: "techstack", label: "Tech Stack", icon: "Boxes" }
   ];
 
@@ -104,31 +112,43 @@ export default function PortfolioSection({
     return url;
   };
 
-  // รวมรายการ Certificates (ดึงจาก hero.certificates หรือ items ที่อัปโหลด)
-  const uploadedCerts = items.filter(
-    (item) => (item.categoryId === "cat-certificates" || item.category === "certificates") && item.imageUrl
-  );
-  const combinedCerts = [
-    ...(Array.isArray(certificates) ? certificates : []),
-    ...uploadedCerts
-  ];
-  const displayCertificates = (combinedCerts.length > 0 ? combinedCerts : DEFAULT_CERTIFICATES).map(c => ({
-    ...c,
-    imageUrl: sanitizeImg(c.imageUrl || c.src || c.url)
+  // รวมรายการ Activities (ผลงานยามว่าง เช่น อนิเมชั่น คลิป วิดีโอ รูปภาพ)
+  const uploadedActivities = items.filter(
+    (item) => (item.categoryId === "cat-activities" || item.category === "activities") && (item.imageUrl || item.url || item.videoUrl)
+  ).map(item => ({
+    id: item.id,
+    type: item.type || (isVideoMedia(item.videoUrl || item.imageUrl || item.url) ? "video" : "image"),
+    url: item.videoUrl || item.imageUrl || item.url,
+    thumbnailUrl: item.thumbnailUrl
   }));
 
-  // รวมรายการ Awards (ดึงจาก hero.awards หรือ items ที่อัปโหลด)
-  const uploadedAwards = items.filter(
-    (item) => (item.categoryId === "cat-awards" || item.category === "awards") && item.imageUrl
-  );
-  const combinedAwards = [
-    ...(Array.isArray(awards) ? awards : []),
-    ...uploadedAwards
+  const heroActivities = Array.isArray(activities) && activities.length > 0
+    ? activities
+    : (
+        // หากยังไม่มี activities ให้ดึงข้อมูลเก่าจาก certificates และ awards มาเป็น fallback อัตโนมัติ
+        ((Array.isArray(certificates) && certificates.length > 0) || (Array.isArray(awards) && awards.length > 0))
+          ? [
+              ...(Array.isArray(certificates) ? certificates.map(c => ({ id: c.id, type: "image", url: c.imageUrl || c.url || c.src })) : []),
+              ...(Array.isArray(awards) ? awards.map(a => ({ id: a.id, type: "image", url: a.imageUrl || a.url || a.src })) : [])
+            ]
+          : DEFAULT_ACTIVITIES
+      );
+
+  const combinedActivities = [
+    ...heroActivities,
+    ...uploadedActivities
   ];
-  const displayAwards = (combinedAwards.length > 0 ? combinedAwards : DEFAULT_AWARDS).map(a => ({
-    ...a,
-    imageUrl: sanitizeImg(a.imageUrl || a.src || a.url)
-  }));
+
+  const displayActivities = (combinedActivities.length > 0 ? combinedActivities : DEFAULT_ACTIVITIES).map(act => {
+    const rawUrl = act.url || act.imageUrl || act.src || "";
+    const isVid = act.type === "video" || isVideoMedia(act);
+    return {
+      ...act,
+      type: isVid ? "video" : "image",
+      url: sanitizeImg(rawUrl),
+      thumbnailUrl: act.thumbnailUrl ? sanitizeImg(act.thumbnailUrl) : ""
+    };
+  }).filter(act => Boolean(act.url));
 
   // Tech Stack Items (ดึงจาก Firestore/LocalStorage หรือใช้ค่าตั้งต้น)
   const displayTechStack = techStack && techStack.length > 0 ? techStack : DEFAULT_TECH_STACK;
@@ -283,30 +303,69 @@ export default function PortfolioSection({
         </div>
       )}
 
-      {/* Tab 2: Certificates Showcase Grid (แสดงเฉพาะรูปภาพที่แนบไฟล์เข้าไป ตามภาพแนบที่ 4) */}
-      {activeTab === "certificates" && (
+      {/* Tab 2: Activities Showcase Grid (รวม cer กับ award แทนที่ด้วย Activities แสดงเฉพาะภาพหรือวิดีโอเท่านั้น) */}
+      {activeTab === "activities" && (
         <div className="tab-content-wrapper">
           <div className="pure-media-cards-grid">
-            {displayCertificates.map((cert, idx) => {
-              const imgUrl = cert.imageUrl || cert.src || cert.url;
-              if (!imgUrl) return null;
+            {displayActivities.map((act, idx) => {
+              const isVid = act.type === "video" || isVideoMedia(act);
+              const mediaUrl = act.url || act.imageUrl || act.src;
+              if (!mediaUrl) return null;
+
+              const ytId = isVid ? getYouTubeId(mediaUrl) : null;
+              const vimeoId = isVid ? getVimeoId(mediaUrl) : null;
+              const thumbnail = act.thumbnailUrl || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null);
+
               return (
                 <div 
-                  key={cert.id || idx} 
+                  key={act.id || idx} 
                   className="pure-media-card group"
-                  onClick={() => setLightboxImage(imgUrl)}
-                  title="คลิกเพื่อดูภาพขยาย"
+                  onClick={() => setLightboxMedia({ type: isVid ? "video" : "image", url: mediaUrl, thumbnailUrl: thumbnail })}
+                  title={isVid ? "คลิกขยายเพื่อดูวิดีโอ" : "คลิกเพื่อดูภาพขยาย"}
                 >
                   <div className="pure-media-inner">
-                    <img 
-                      src={imgUrl} 
-                      alt="Certificate" 
-                      className="pure-media-img" 
-                      loading="lazy" 
-                    />
+                    {isVid ? (
+                      <>
+                        {thumbnail ? (
+                          <img 
+                            src={thumbnail} 
+                            alt="Activity Video Thumbnail" 
+                            className="pure-media-img" 
+                            loading="lazy" 
+                          />
+                        ) : (
+                          <video 
+                            src={mediaUrl} 
+                            preload="metadata" 
+                            muted 
+                            playsInline 
+                            className="pure-media-video-preview" 
+                          />
+                        )}
+                        {/* ป้ายแสดงประเภท Video */}
+                        <div className="media-video-badge">
+                          <Icons.Play size={11} fill="currentColor" />
+                          <span>Video</span>
+                        </div>
+                        {/* ปุ่ม Play แสดงตรงกลางเพื่อให้รู้ว่าเป็นคลิป/อนิเมชัน และต้องกดขยายเพื่อดูเท่านั้น */}
+                        <div className="media-play-icon-circle">
+                          <Icons.Play size={22} fill="currentColor" style={{ marginLeft: "2px" }} />
+                        </div>
+                      </>
+                    ) : (
+                      <img 
+                        src={mediaUrl} 
+                        alt="Activity Media" 
+                        className="pure-media-img" 
+                        loading="lazy" 
+                      />
+                    )}
+
+                    {/* Hover Overlay แนะนำการกดขยาย */}
                     <div className="pure-media-hover-overlay">
                       <span className="media-zoom-btn">
-                        <Icons.Maximize2 size={16} /> ดูภาพขยาย
+                        {isVid ? <Icons.Play size={16} fill="currentColor" /> : <Icons.Maximize2 size={16} />}
+                        {isVid ? "ขยายเพื่อดูวิดีโอ" : "ดูภาพขยาย"}
                       </span>
                     </div>
                   </div>
@@ -317,41 +376,7 @@ export default function PortfolioSection({
         </div>
       )}
 
-      {/* Tab 3: Awards Showcase Grid (แสดงเฉพาะรูปภาพที่แนบไฟล์เข้าไป ตามภาพแนบที่ 4) */}
-      {activeTab === "awards" && (
-        <div className="tab-content-wrapper">
-          <div className="pure-media-cards-grid">
-            {displayAwards.map((award, idx) => {
-              const imgUrl = award.imageUrl || award.src || award.url;
-              if (!imgUrl) return null;
-              return (
-                <div 
-                  key={award.id || idx} 
-                  className="pure-media-card group"
-                  onClick={() => setLightboxImage(imgUrl)}
-                  title="คลิกเพื่อดูภาพขยาย"
-                >
-                  <div className="pure-media-inner">
-                    <img 
-                      src={imgUrl} 
-                      alt="Award" 
-                      className="pure-media-img" 
-                      loading="lazy" 
-                    />
-                    <div className="pure-media-hover-overlay">
-                      <span className="media-zoom-btn">
-                        <Icons.Maximize2 size={16} /> ดูภาพขยาย
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Tab 4: Tech Stack Showcase (การ์ดสไตล์ภาพแนบที่ 4) */}
+      {/* Tab 3: Tech Stack Showcase (การ์ดสไตล์ภาพแนบที่ 4) */}
       {activeTab === "techstack" && (
         <div className="tab-content-wrapper">
           <div className="tech-cards-grid">
@@ -385,11 +410,11 @@ export default function PortfolioSection({
         </div>
       )}
 
-      {/* Lightbox Modal: อยู่ Layer หน้าสุด (Portal to document.body) แสดงเฉพาะภาพและปุ่ม X ตามภาพแนบที่ 3 */}
-      {lightboxImage && typeof document !== "undefined" && createPortal(
+      {/* Lightbox Modal: อยู่ Layer หน้าสุด (Portal to document.body) ขยายดูภาพและเล่นวิดีโอ มีปุ่ม X ปิดเท่านั้น */}
+      {lightboxMedia && typeof document !== "undefined" && createPortal(
         <div 
           className="lightbox-backdrop" 
-          onClick={() => setLightboxImage(null)}
+          onClick={() => setLightboxMedia(null)}
           role="dialog"
           aria-modal="true"
         >
@@ -399,25 +424,67 @@ export default function PortfolioSection({
             className="lightbox-close-btn" 
             onClick={(e) => {
               e.stopPropagation();
-              setLightboxImage(null);
+              setLightboxMedia(null);
             }}
-            title="ปิดภาพขยาย (Esc)"
+            title="ปิด (Esc)"
             id="lightbox-close-button"
             aria-label="Close"
           >
             <Icons.X size={32} />
           </button>
 
-          {/* กล่องแสดงภาพขยายขนาดใหญ่ */}
+          {/* กล่องแสดงภาพหรือวิดีโอขยายขนาดใหญ่ */}
           <div 
             className="lightbox-image-container"
             onClick={(e) => e.stopPropagation()}
           >
-            <img 
-              src={lightboxImage} 
-              alt="Enlarged Certificate or Award" 
-              className="lightbox-enlarged-img" 
-            />
+            {lightboxMedia.type === "video" ? (
+              (() => {
+                const ytId = getYouTubeId(lightboxMedia.url);
+                const vimeoId = getVimeoId(lightboxMedia.url);
+                if (ytId) {
+                  return (
+                    <div className="lightbox-iframe-wrapper">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`}
+                        title="Video Player"
+                        className="lightbox-iframe"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  );
+                }
+                if (vimeoId) {
+                  return (
+                    <div className="lightbox-iframe-wrapper">
+                      <iframe
+                        src={`https://player.vimeo.com/video/${vimeoId}?autoplay=1`}
+                        title="Video Player"
+                        className="lightbox-iframe"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  );
+                }
+                return (
+                  <video 
+                    src={lightboxMedia.url} 
+                    controls 
+                    autoPlay 
+                    playsInline 
+                    className="lightbox-enlarged-video"
+                  />
+                );
+              })()
+            ) : (
+              <img 
+                src={lightboxMedia.url} 
+                alt="Enlarged Media" 
+                className="lightbox-enlarged-img" 
+              />
+            )}
           </div>
         </div>,
         document.body

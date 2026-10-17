@@ -9,23 +9,24 @@ export default function AboutSection({ hero, items = [] }) {
   const resumeUrl = hero?.resumeUrl || "#";
   const imageUrl = hero?.aboutImageUrl || hero?.imageUrl || "";
 
-  // คำนวณจำนวนผลงานจากข้อมูลที่เพิ่มเข้าไปจริงๆ (อ้างอิงจากรายการจริงในระบบตามข้อ 1)
+  // คำนวณจำนวนผลงานจากข้อมูลที่เพิ่มเข้าไปจริงๆ (อ้างอิงจากรายการจริงในระบบ)
   const projectItems = items.filter(
-    (item) => item.categoryId === "cat-projects" || item.category === "projects" || (!item.categoryId?.includes("cert") && !item.categoryId?.includes("award"))
+    (item) => item.categoryId === "cat-projects" || item.category === "projects" || (!item.categoryId?.includes("act") && !item.categoryId?.includes("cert") && !item.categoryId?.includes("award"))
   );
   const projCount = projectItems.length;
 
-  const uploadedCerts = items.filter(
-    (item) => (item.categoryId === "cat-certificates" || item.category === "certificates") && (item.imageUrl || item.file)
+  const uploadedActs = items.filter(
+    (item) => (item.categoryId === "cat-activities" || item.category === "activities") && (item.imageUrl || item.url || item.videoUrl)
   );
-  const heroCerts = Array.isArray(hero?.certificates) ? hero.certificates.filter(c => c.imageUrl || c.src || c.url) : [];
-  const certCount = uploadedCerts.length + heroCerts.length;
+  const heroActs = Array.isArray(hero?.activities) 
+    ? hero.activities.filter(a => a.url || a.imageUrl || a.src) 
+    : [
+        ...(Array.isArray(hero?.certificates) ? hero.certificates.filter(c => c.imageUrl || c.src || c.url) : []),
+        ...(Array.isArray(hero?.awards) ? hero.awards.filter(a => a.imageUrl || a.src || a.url) : [])
+      ];
+  const actCount = uploadedActs.length + heroActs.length;
 
-  const uploadedAwards = items.filter(
-    (item) => (item.categoryId === "cat-awards" || item.category === "awards") && (item.imageUrl || item.file)
-  );
-  const heroAwards = Array.isArray(hero?.awards) ? hero.awards.filter(a => a.imageUrl || a.src || a.url) : [];
-  const awardCount = uploadedAwards.length + heroAwards.length;
+  const techCount = Array.isArray(hero?.techStack) ? hero.techStack.length : 0;
 
   // แบ่งบรรทัดชื่อแบบสวยงามตามสไตล์ภาพแนบที่ 4
   const nameParts = name.trim().split(" ");
@@ -191,32 +192,32 @@ export default function AboutSection({ hero, items = [] }) {
             </div>
           </a>
 
-          {/* Card 2: Certificates */}
-          <a href="#portfolio" className="about-stat-banner-card" title="คลิกเพื่อไปยังส่วน Certificates">
+          {/* Card 2: Activities */}
+          <a href="#portfolio" className="about-stat-banner-card" title="คลิกเพื่อไปยังส่วน Activities">
             <div className="stat-banner-left">
               <div className="stat-banner-tag">
-                <Icons.Award size={22} className="stat-banner-tag-icon" />
-                <span>CERTIFICATES</span>
+                <Icons.Sparkles size={22} className="stat-banner-tag-icon" />
+                <span>ACTIVITIES</span>
               </div>
-              <p className="stat-banner-desc">skills validated</p>
+              <p className="stat-banner-desc">creative leisure works & clips</p>
             </div>
             <div className="stat-banner-right">
-              <span className="stat-banner-number">{certCount}</span>
+              <span className="stat-banner-number">{actCount}</span>
               <Icons.ArrowUpRight size={22} className="stat-banner-arrow" />
             </div>
           </a>
 
-          {/* Card 3: Awards */}
-          <a href="#portfolio" className="about-stat-banner-card" title="คลิกเพื่อไปยังส่วน Awards">
+          {/* Card 3: Tech Stack */}
+          <a href="#portfolio" className="about-stat-banner-card" title="คลิกเพื่อไปยังส่วน Tech Stack">
             <div className="stat-banner-left">
               <div className="stat-banner-tag">
-                <Icons.Trophy size={22} className="stat-banner-tag-icon" />
-                <span>AWARDS</span>
+                <Icons.Boxes size={22} className="stat-banner-tag-icon" />
+                <span>TECH STACK</span>
               </div>
-              <p className="stat-banner-desc">achievements earned</p>
+              <p className="stat-banner-desc">technologies & tools mastered</p>
             </div>
             <div className="stat-banner-right">
-              <span className="stat-banner-number">{awardCount}</span>
+              <span className="stat-banner-number">{techCount}</span>
               <Icons.ArrowUpRight size={22} className="stat-banner-arrow" />
             </div>
           </a>

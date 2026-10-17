@@ -132,6 +132,36 @@ export const DEFAULT_AWARDS = [
   { id: "award-2", imageUrl: "https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=900&q=80" }
 ];
 
+// รายการกิจกรรมและผลงานเวลาว่างเริ่มต้น (Activities: รูปภาพ, วิดีโอ, คลิป, อนิเมชัน)
+export const DEFAULT_ACTIVITIES = [
+  {
+    id: "act-1",
+    type: "image",
+    url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80",
+    title: "3D Animation Render"
+  },
+  {
+    id: "act-2",
+    type: "video",
+    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    thumbnailUrl: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1000&q=80",
+    title: "Motion Graphics Loop"
+  },
+  {
+    id: "act-3",
+    type: "image",
+    url: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80",
+    title: "Digital Art & Leisure Design"
+  },
+  {
+    id: "act-4",
+    type: "video",
+    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    thumbnailUrl: "https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&w=1000&q=80",
+    title: "Character Animation Clip"
+  }
+];
+
 // ข้อมูลตั้งต้นสำหรับโครงสร้างเว็บไซต์และช่องเว้นสำหรับใส่เนื้อหา (Skeleton & Placeholders)
 export const DEFAULT_HERO = {
   name: "[ ชื่อ-นามสกุลของคุณ ]",
@@ -147,20 +177,20 @@ export const DEFAULT_HERO = {
   imageUrl: "", // Legacy fallback
   yearsExp: "1+",
   projectsCount: "0",
-  awardsCount: "0",
+  activitiesCount: "0",
   resumeUrl: "#",
   education: DEFAULT_EDUCATION,
   experience: DEFAULT_EXPERIENCE,
   techStack: DEFAULT_TECH_STACK,
   gallery: DEFAULT_GALLERY,
+  activities: DEFAULT_ACTIVITIES,
   certificates: DEFAULT_CERTIFICATES,
   awards: DEFAULT_AWARDS
 };
 
 export const DEFAULT_CATEGORIES = [
   { id: "cat-projects", name: "💻 ผลงานโปรเจกต์ (Projects)" },
-  { id: "cat-certificates", name: "📜 เกียรติบัตร & วุฒิบัตร (Certificates)" },
-  { id: "cat-awards", name: "🏆 รางวัลและการแข่งขัน (Awards)" }
+  { id: "cat-activities", name: "✨ กิจกรรมและผลงานยามว่าง (Activities)" }
 ];
 
 export const DEFAULT_ITEMS = [
@@ -497,8 +527,40 @@ export const getHeroData = async () => {
       : (rawData.title ? [rawData.title] : DEFAULT_SUBTITLES),
     gallery: Array.isArray(rawData.gallery) && rawData.gallery.length > 0
       ? rawData.gallery
-      : DEFAULT_GALLERY
+      : DEFAULT_GALLERY,
+    activities: Array.isArray(rawData.activities) && rawData.activities.length > 0
+      ? rawData.activities
+      : (
+          ((Array.isArray(rawData.certificates) && rawData.certificates.length > 0) || (Array.isArray(rawData.awards) && rawData.awards.length > 0))
+            ? [
+                ...(Array.isArray(rawData.certificates) ? rawData.certificates.map(c => ({ id: c.id || `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`, type: "image", url: c.imageUrl || c.url || c.src })) : []),
+                ...(Array.isArray(rawData.awards) ? rawData.awards.map(a => ({ id: a.id || `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`, type: "image", url: a.imageUrl || a.url || a.src })) : [])
+              ].filter(item => item.url)
+            : DEFAULT_ACTIVITIES
+        )
   };
+};
+
+export const getYouTubeId = (url) => {
+  if (!url || typeof url !== "string") return null;
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+  return match ? match[1] : null;
+};
+
+export const getVimeoId = (url) => {
+  if (!url || typeof url !== "string") return null;
+  const match = url.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)/);
+  return match ? match[1] : null;
+};
+
+export const isVideoMedia = (item) => {
+  if (!item) return false;
+  if (item.type === "video") return true;
+  const url = (typeof item === "string" ? item : (item.url || item.imageUrl || item.src || "")).toLowerCase();
+  if (url.startsWith("data:video/")) return true;
+  if (/\.(mp4|webm|mov|ogg)($|\?)/i.test(url)) return true;
+  if (getYouTubeId(url) || getVimeoId(url)) return true;
+  return false;
 };
 
 export const updateHeroData = async (data) => {
@@ -773,4 +835,24 @@ export const uploadImage = async (file, isLogo = false) => {
     }
   }
   return "";
+};
+
+/* ==========================================================================
+   7. MEDIA UPLOAD (Supports Images and Videos for Activities)
+   ========================================================================== */
+export const uploadMedia = async (file) => {
+  if (!file) return "";
+  const isVideo = file.type?.startsWith("video/") || /\.(mp4|webm|mov|ogg)$/i.test(file.name);
+  if (isVideo) {
+    if (file.size > 850 * 1024) {
+      throw new Error("ไฟล์วิดีโอมีขนาดใหญ่เกิน 850KB แนะนำให้ใส่ลิงก์ URL ของวิดีโอ (เช่น YouTube, Vimeo หรือ Direct MP4 URL)");
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  return uploadImage(file, false);
 };

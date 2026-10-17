@@ -1425,10 +1425,10 @@ section {
   visibility: visible !important;
 }
 
-/* Modern Capsule Bar matching Attachment 1 & 2: Widen to full width and distribute 4 equal tabs */
+/* Modern Capsule Bar: Widen to full width and distribute equal tabs (Projects, Activities, Tech Stack) */
 .portfolio-tabs-nav-modern {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   width: 100%;
   align-items: center;
   gap: 0.5rem;
@@ -3244,6 +3244,75 @@ section {
   transform: scale(1.04);
 }
 
+/* Video Preview inside Pure Media Grid */
+.pure-media-video-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  background: #000;
+  transition: transform 0.4s ease;
+}
+
+.pure-media-card:hover .pure-media-video-preview {
+  transform: scale(1.04);
+}
+
+/* Video Badge indicator */
+.media-video-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(10, 18, 36, 0.88);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+  font-size: 0.725rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* Glowing Play Icon Circle overlay */
+.media-play-icon-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), 0 0 20px rgba(56, 189, 248, 0.25);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.pure-media-card:hover .media-play-icon-circle {
+  transform: translate(-50%, -50%) scale(1.15);
+  background: rgba(56, 189, 248, 0.95);
+  border-color: #38bdf8;
+  color: #030712;
+  box-shadow: 0 12px 30px rgba(56, 189, 248, 0.6);
+}
+
 .pure-media-hover-overlay {
   position: absolute;
   inset: 0;
@@ -3356,6 +3425,38 @@ section {
   border-radius: 10px !important;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 50px rgba(56, 189, 248, 0.25) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.lightbox-enlarged-video {
+  max-width: 90vw !important;
+  max-height: 85vh !important;
+  width: 1000px;
+  aspect-ratio: 16/9;
+  object-fit: contain !important;
+  border-radius: 12px !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 50px rgba(56, 189, 248, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: #000;
+  outline: none;
+}
+
+.lightbox-iframe-wrapper {
+  width: 90vw;
+  max-width: 1000px;
+  aspect-ratio: 16/9;
+  max-height: 85vh;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 50px rgba(56, 189, 248, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #000;
+}
+
+.lightbox-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
 }
 
 /* Project Detail Zoom Trigger & Badge */

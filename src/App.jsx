@@ -8,6 +8,7 @@ import {
   DEFAULT_TECH_STACK,
   DEFAULT_SUBTITLES,
   DEFAULT_GALLERY,
+  DEFAULT_ACTIVITIES,
   DEFAULT_CERTIFICATES,
   DEFAULT_AWARDS,
   getHeroData, 
@@ -23,6 +24,10 @@ import {
   getContactData, 
   updateContactData, 
   uploadImage,
+  uploadMedia,
+  isVideoMedia,
+  getYouTubeId,
+  getVimeoId,
   getCustomCss,
   updateCustomCss
 } from "./dbService";
@@ -192,11 +197,12 @@ const PublicPage = () => {
         {/* 4. About Section (เว้นสำหรับใส่ประวัติส่วนตัว สถิติ และไทม์ไลน์) */}
         <AboutSection hero={hero} items={items} />
 
-        {/* 5. Portfolio Section (4 แท็บ: Projects, Certificates, Awards, Tech Stack) */}
+        {/* 5. Portfolio Section (3 แท็บ: Projects, Activities, Tech Stack) */}
         <PortfolioSection 
           items={items} 
           categories={categories} 
           techStack={hero.techStack} 
+          activities={hero.activities}
           certificates={hero.certificates}
           awards={hero.awards}
           onSelectProject={(proj) => {
@@ -297,13 +303,13 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     file: null
   });
 
-  // Certificates (เพิ่มแค่รูปเท่านั้น ตามข้อ 3)
-  const [certImageUrl, setCertImageUrl] = useState("");
-  const [showCertModal, setShowCertModal] = useState(false);
-
-  // Awards (เพิ่มแค่รูปเท่านั้น ตามข้อ 3)
-  const [awardImageUrl, setAwardImageUrl] = useState("");
-  const [showAwardModal, setShowAwardModal] = useState(false);
+  // Activities (รวม cer กับ award แทนที่ด้วย Activities รองรับทั้งรูปภาพและวิดีโอ)
+  const [activityForm, setActivityForm] = useState({
+    type: "image", // 'image' | 'video'
+    url: "",
+    thumbnailUrl: ""
+  });
+  const [showActivityModal, setShowActivityModal] = useState(false);
 
   const TECH_PRESETS = [
     { name: "HTML", imageUrl: "https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original.svg", icon: "Layout" },
@@ -817,119 +823,98 @@ const AdminPage = ({ setGlobalCustomCss }) => {
     }
   };
 
-  // 1.3 Certificates Actions (เพิ่มเฉพาะรูปภาพ ตามข้อ 3)
-  const handleUploadCertImage = async (e) => {
+  // 1.3 Activities Actions (รวม cer กับ award แทนที่ด้วย Activities รองรับทั้งรูปภาพและวิดีโอ)
+  const handleUploadActivityMedia = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      triggerToast("⏳ กำลังอัปโหลดรูปภาพเกียรติบัตร...");
+      const isVideo = file.type?.startsWith("video/") || /\.(mp4|webm|mov|ogg)$/i.test(file.name);
+      triggerToast(isVideo ? "⏳ กำลังอัปโหลดไฟล์วิดีโอ..." : "⏳ กำลังอัปโหลดรูปภาพ...");
       try {
-        const url = await uploadImage(file);
-        setCertImageUrl(url);
-        triggerToast("✅ อัปโหลดรูปภาพเรียบร้อย!");
+        const url = await uploadMedia(file);
+        setActivityForm(prev => ({
+          ...prev,
+          url,
+          type: isVideo ? "video" : "image"
+        }));
+        triggerToast("✅ อัปโหลดไฟล์เรียบร้อย!");
       } catch (err) {
         console.error(err);
-        triggerToast("❌ อัปโหลดไม่สำเร็จ");
+        triggerToast(`❌ ${err.message || "อัปโหลดไม่สำเร็จ"}`);
       }
     }
   };
 
-  const handleSaveCert = async (e) => {
+  const handleUploadActivityThumbnail = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      triggerToast("⏳ กำลังอัปโหลดภาพปกวิดีโอ...");
+      try {
+        const url = await uploadImage(file);
+        setActivityForm(prev => ({ ...prev, thumbnailUrl: url }));
+        triggerToast("✅ อัปโหลดภาพปกเรียบร้อย!");
+      } catch (err) {
+        console.error(err);
+        triggerToast("❌ อัปโหลดภาพปกไม่สำเร็จ");
+      }
+    }
+  };
+
+  const handleSaveActivity = async (e) => {
     e.preventDefault();
-    if (!certImageUrl.trim()) {
-      triggerToast("⚠️ กรุณาเลือกหรือใส่ URL รูปภาพเกียรติบัตร");
+    if (!activityForm.url.trim()) {
+      triggerToast("⚠️ กรุณาเลือกไฟล์หรือใส่ URL ภาพ/วิดีโอ");
       return;
     }
-    const currentCerts = Array.isArray(hero.certificates) && hero.certificates.length > 0
-      ? [...hero.certificates]
-      : [...DEFAULT_CERTIFICATES];
-    const newCert = {
-      id: `cert-${Date.now()}`,
-      imageUrl: certImageUrl
+    const currentActivities = Array.isArray(hero.activities) && hero.activities.length > 0
+      ? [...hero.activities]
+      : (
+          ((Array.isArray(hero.certificates) && hero.certificates.length > 0) || (Array.isArray(hero.awards) && hero.awards.length > 0))
+            ? [
+                ...(Array.isArray(hero.certificates) ? hero.certificates.map(c => ({ id: c.id, type: "image", url: c.imageUrl || c.url || c.src })) : []),
+                ...(Array.isArray(hero.awards) ? hero.awards.map(a => ({ id: a.id, type: "image", url: a.imageUrl || a.url || a.src })) : [])
+              ]
+            : [...DEFAULT_ACTIVITIES]
+        );
+
+    const isVid = activityForm.type === "video" || isVideoMedia(activityForm.url);
+    const newAct = {
+      id: `act-${Date.now()}`,
+      type: isVid ? "video" : "image",
+      url: activityForm.url.trim(),
+      thumbnailUrl: activityForm.thumbnailUrl ? activityForm.thumbnailUrl.trim() : ""
     };
-    const updated = [...currentCerts, newCert];
-    const updatedHero = { ...hero, certificates: updated };
+    const updated = [...currentActivities, newAct];
+    const updatedHero = { ...hero, activities: updated };
     setHero(updatedHero);
     try {
       await updateHeroData(updatedHero);
-      setCertImageUrl("");
-      setShowCertModal(false);
-      triggerToast("🎉 เพิ่มรูปภาพเกียรติบัตรเรียบร้อย!");
+      setActivityForm({ type: "image", url: "", thumbnailUrl: "" });
+      setShowActivityModal(false);
+      triggerToast("🎉 เพิ่มผลงาน Activities เรียบร้อย!");
     } catch (err) {
       console.error(err);
       triggerToast("❌ เกิดข้อผิดพลาดในการบันทึก");
     }
   };
 
-  const handleDeleteCert = async (id) => {
-    if (!window.confirm("ต้องการลบรูปภาพเกียรติบัตรนี้ใช่ไหม?")) return;
-    const currentCerts = Array.isArray(hero.certificates) && hero.certificates.length > 0
-      ? [...hero.certificates]
-      : [...DEFAULT_CERTIFICATES];
-    const updated = currentCerts.filter(c => c.id !== id);
-    const updatedHero = { ...hero, certificates: updated };
+  const handleDeleteActivity = async (id) => {
+    if (!window.confirm("ต้องการลบผลงาน Activities นี้ใช่ไหม?")) return;
+    const currentActivities = Array.isArray(hero.activities) && hero.activities.length > 0
+      ? [...hero.activities]
+      : (
+          ((Array.isArray(hero.certificates) && hero.certificates.length > 0) || (Array.isArray(hero.awards) && hero.awards.length > 0))
+            ? [
+                ...(Array.isArray(hero.certificates) ? hero.certificates.map(c => ({ id: c.id, type: "image", url: c.imageUrl || c.url || c.src })) : []),
+                ...(Array.isArray(hero.awards) ? hero.awards.map(a => ({ id: a.id, type: "image", url: a.imageUrl || a.url || a.src })) : [])
+              ]
+            : [...DEFAULT_ACTIVITIES]
+        );
+    const updated = currentActivities.filter(a => a.id !== id);
+    const updatedHero = { ...hero, activities: updated };
     setHero(updatedHero);
     try {
       await updateHeroData(updatedHero);
-      triggerToast("🗑️ ลบเกียรติบัตรเรียบร้อยแล้ว!");
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // 1.4 Awards Actions (เพิ่มเฉพาะรูปภาพ ตามข้อ 3)
-  const handleUploadAwardImage = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      triggerToast("⏳ กำลังอัปโหลดรูปภาพรางวัล...");
-      try {
-        const url = await uploadImage(file);
-        setAwardImageUrl(url);
-        triggerToast("✅ อัปโหลดรูปภาพเรียบร้อย!");
-      } catch (err) {
-        console.error(err);
-        triggerToast("❌ อัปโหลดไม่สำเร็จ");
-      }
-    }
-  };
-
-  const handleSaveAward = async (e) => {
-    e.preventDefault();
-    if (!awardImageUrl.trim()) {
-      triggerToast("⚠️ กรุณาเลือกหรือใส่ URL รูปภาพรางวัล");
-      return;
-    }
-    const currentAwards = Array.isArray(hero.awards) && hero.awards.length > 0
-      ? [...hero.awards]
-      : [...DEFAULT_AWARDS];
-    const newAward = {
-      id: `award-${Date.now()}`,
-      imageUrl: awardImageUrl
-    };
-    const updated = [...currentAwards, newAward];
-    const updatedHero = { ...hero, awards: updated };
-    setHero(updatedHero);
-    try {
-      await updateHeroData(updatedHero);
-      setAwardImageUrl("");
-      setShowAwardModal(false);
-      triggerToast("🎉 เพิ่มรูปภาพรางวัลเรียบร้อย!");
-    } catch (err) {
-      console.error(err);
-      triggerToast("❌ เกิดข้อผิดพลาดในการบันทึก");
-    }
-  };
-
-  const handleDeleteAward = async (id) => {
-    if (!window.confirm("ต้องการลบรูปภาพรางวัลนี้ใช่ไหม?")) return;
-    const currentAwards = Array.isArray(hero.awards) && hero.awards.length > 0
-      ? [...hero.awards]
-      : [...DEFAULT_AWARDS];
-    const updated = currentAwards.filter(a => a.id !== id);
-    const updatedHero = { ...hero, awards: updated };
-    setHero(updatedHero);
-    try {
-      await updateHeroData(updatedHero);
-      triggerToast("🗑️ ลบรางวัลเรียบร้อยแล้ว!");
+      triggerToast("🗑️ ลบผลงาน Activities เรียบร้อยแล้ว!");
     } catch (err) {
       console.error(err);
     }
@@ -1154,11 +1139,8 @@ const AdminPage = ({ setGlobalCustomCss }) => {
           <button className={`admin-menu-item ${activeTab === "items" ? "active" : ""}`} onClick={() => setActiveTab("items")}>
             <DynamicIcon name="Code2" size={18} /> จัดการผลงานโปรเจกต์ (Projects)
           </button>
-          <button className={`admin-menu-item ${activeTab === "certificates" ? "active" : ""}`} onClick={() => setActiveTab("certificates")}>
-            <DynamicIcon name="Award" size={18} /> จัดการเกียรติบัตร (Certificates)
-          </button>
-          <button className={`admin-menu-item ${activeTab === "awards" ? "active" : ""}`} onClick={() => setActiveTab("awards")}>
-            <DynamicIcon name="Trophy" size={18} /> จัดการรางวัล (Awards)
+          <button className={`admin-menu-item ${activeTab === "activities" ? "active" : ""}`} onClick={() => setActiveTab("activities")}>
+            <DynamicIcon name="Sparkles" size={18} /> กิจกรรม / ผลงานเวลาว่าง (Activities)
           </button>
           <button className={`admin-menu-item ${activeTab === "contacts" ? "active" : ""}`} onClick={() => setActiveTab("contacts")}>
             <DynamicIcon name="Share2" size={18} /> ช่องทางการติดต่อ
@@ -1950,78 +1932,77 @@ const AdminPage = ({ setGlobalCustomCss }) => {
             </div>
           )}
 
-          {/* TAB: CERTIFICATES (จัดการเกียรติบัตร - เพิ่มแค่รูปเท่านั้น ตามข้อ 3) */}
-          {activeTab === "certificates" && (
+          {/* TAB: ACTIVITIES (รวม cer กับ award แทนที่ด้วย Activities รองรับทั้งรูปภาพและวิดีโอ) */}
+          {activeTab === "activities" && (
             <div>
               <div className="admin-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <h2>จัดการเกียรติบัตร (Certificates)</h2>
+                  <h2>จัดการกิจกรรมและผลงานเวลาว่าง (Activities)</h2>
                   <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: "0.25rem 0 0 0" }}>
-                    เพิ่มเฉพาะรูปภาพเกียรติบัตรเพื่อนำไปแสดงผลในหน้าเว็บ (คลิกรูปเพื่อดูภาพขยายได้)
+                    ใส่ผลงานที่ทำขึ้นเวลาว่าง เช่น อนิเมชั่น คลิปวิดีโอ หรือรูปภาพ (แสดงเฉพาะภาพหรือวิดีโอ และกดขยายเพื่อดูได้)
                   </p>
                 </div>
-                <button type="button" className="btn btn-primary" onClick={() => { setCertImageUrl(""); setShowCertModal(true); }}>
-                  <DynamicIcon name="Plus" size={16} /> เพิ่มรูปเกียรติบัตร
+                <button 
+                  type="button" 
+                  className="btn btn-primary" 
+                  onClick={() => { 
+                    setActivityForm({ type: "image", url: "", thumbnailUrl: "" }); 
+                    setShowActivityModal(true); 
+                  }}
+                >
+                  <DynamicIcon name="Plus" size={16} /> เพิ่มภาพ/วิดีโอ Activities
                 </button>
               </div>
 
               <div className="admin-gallery-grid">
-                {(Array.isArray(hero.certificates) && hero.certificates.length > 0 ? hero.certificates : DEFAULT_CERTIFICATES).map((cert, idx) => (
-                  <div key={cert.id || idx} className="admin-gallery-card">
-                    <img src={cert.imageUrl} alt="Certificate" className="admin-gallery-thumb" />
-                    <div className="admin-gallery-info">
-                      <div className="admin-gallery-title">ใบรับรอง / เกียรติบัตร #{idx + 1}</div>
-                      <div className="admin-gallery-actions">
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ padding: "0.35rem 0.5rem", fontSize: "0.75rem", color: "#f87171", width: "100%", justifyContent: "center" }}
-                          onClick={() => handleDeleteCert(cert.id)}
-                        >
-                          <DynamicIcon name="Trash2" size={13} /> ลบรูปภาพนี้
-                        </button>
+                {(Array.isArray(hero.activities) && hero.activities.length > 0 
+                  ? hero.activities 
+                  : (
+                      ((Array.isArray(hero.certificates) && hero.certificates.length > 0) || (Array.isArray(hero.awards) && hero.awards.length > 0))
+                        ? [
+                            ...(Array.isArray(hero.certificates) ? hero.certificates.map(c => ({ id: c.id, type: "image", url: c.imageUrl || c.url || c.src })) : []),
+                            ...(Array.isArray(hero.awards) ? hero.awards.map(a => ({ id: a.id, type: "image", url: a.imageUrl || a.url || a.src })) : [])
+                          ]
+                        : DEFAULT_ACTIVITIES
+                    )
+                ).map((act, idx) => {
+                  const isVid = act.type === "video" || isVideoMedia(act);
+                  const ytId = isVid ? getYouTubeId(act.url) : null;
+                  const thumb = act.thumbnailUrl || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null);
+
+                  return (
+                    <div key={act.id || idx} className="admin-gallery-card">
+                      {isVid ? (
+                        thumb ? (
+                          <img src={thumb} alt="Activity Video Thumbnail" className="admin-gallery-thumb" />
+                        ) : (
+                          <div style={{ width: "100%", height: "130px", background: "#050b1a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.5rem", color: "#38bdf8" }}>
+                            <DynamicIcon name="Video" size={32} />
+                            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>วิดีโอ / อนิเมชั่น</span>
+                          </div>
+                        )
+                      ) : (
+                        <img src={act.url || act.imageUrl} alt="Activity Media" className="admin-gallery-thumb" />
+                      )}
+                      <div className="admin-gallery-info">
+                        <div className="admin-gallery-title" style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                          <DynamicIcon name={isVid ? "Video" : "Image"} size={14} style={{ color: "#38bdf8" }} />
+                          <span>{isVid ? "วิดีโอ / คลิป" : "รูปภาพ"} #{idx + 1}</span>
+                        </div>
+                        <div className="admin-gallery-actions">
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ padding: "0.35rem 0.5rem", fontSize: "0.75rem", color: "#f87171", width: "100%", justifyContent: "center" }}
+                            onClick={() => handleDeleteActivity(act.id)}
+                          >
+                            <DynamicIcon name="Trash2" size={13} /> ลบรายการนี้
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB: AWARDS (จัดการรางวัล - เพิ่มแค่รูปเท่านั้น ตามข้อ 3) */}
-          {activeTab === "awards" && (
-            <div>
-              <div className="admin-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h2>จัดการรางวัลและการแข่งขัน (Awards)</h2>
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: "0.25rem 0 0 0" }}>
-                    เพิ่มเฉพาะรูปภาพรางวัลหรือการประกวดเพื่อนำไปแสดงผลในหน้าเว็บ (คลิกรูปเพื่อดูภาพขยายได้)
-                  </p>
-                </div>
-                <button type="button" className="btn btn-primary" onClick={() => { setAwardImageUrl(""); setShowAwardModal(true); }}>
-                  <DynamicIcon name="Plus" size={16} /> เพิ่มรูปรางวัล
-                </button>
-              </div>
-
-              <div className="admin-gallery-grid">
-                {(Array.isArray(hero.awards) && hero.awards.length > 0 ? hero.awards : DEFAULT_AWARDS).map((award, idx) => (
-                  <div key={award.id || idx} className="admin-gallery-card">
-                    <img src={award.imageUrl} alt="Award" className="admin-gallery-thumb" />
-                    <div className="admin-gallery-info">
-                      <div className="admin-gallery-title">รางวัล / การแข่งขัน #{idx + 1}</div>
-                      <div className="admin-gallery-actions">
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ padding: "0.35rem 0.5rem", fontSize: "0.75rem", color: "#f87171", width: "100%", justifyContent: "center" }}
-                          onClick={() => handleDeleteAward(award.id)}
-                        >
-                          <DynamicIcon name="Trash2" size={13} /> ลบรูปภาพนี้
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -2690,129 +2671,145 @@ const AdminPage = ({ setGlobalCustomCss }) => {
         </div>
       )}
 
-      {/* Modal: เพิ่มรูปเกียรติบัตร (เพิ่มแค่รูปเท่านั้น ตามข้อ 3) */}
-      {showCertModal && (
+      {/* Modal: เพิ่มผลงาน Activities (รวม cer กับ award แทนที่ด้วย Activities รองรับทั้งภาพและวิดีโอ) */}
+      {showActivityModal && (
         <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: "480px" }}>
+          <div className="modal-content" style={{ maxWidth: "520px" }}>
             <div className="modal-header">
-              <h3>เพิ่มรูปภาพเกียรติบัตร (Certificates)</h3>
-              <button type="button" className="btn-icon" onClick={() => setShowCertModal(false)}>
+              <h3>เพิ่มผลงาน Activities (รูปภาพ / วิดีโอ)</h3>
+              <button type="button" className="btn-icon" onClick={() => setShowActivityModal(false)}>
                 <DynamicIcon name="X" size={18} />
               </button>
             </div>
-            <form onSubmit={handleSaveCert}>
+            <form onSubmit={handleSaveActivity}>
               <div className="modal-body">
+                {/* 1. สลับประเภท: รูปภาพ หรือ วิดีโอ */}
                 <div className="form-group">
-                  <label>เลือกไฟล์รูปภาพเกียรติบัตร *</label>
-                  <div style={{ display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1rem" }}>
-                    <div style={{ width: "90px", height: "65px", borderRadius: "8px", overflow: "hidden", background: "#000", border: "1px dashed rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {certImageUrl ? (
-                        <img src={certImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <label>ประเภทของสื่อ (Media Type) *</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                    <button
+                      type="button"
+                      className={`btn ${activityForm.type === "image" ? "btn-primary" : "btn-secondary"}`}
+                      style={{ justifyContent: "center" }}
+                      onClick={() => setActivityForm(prev => ({ ...prev, type: "image" }))}
+                    >
+                      <DynamicIcon name="Image" size={16} /> รูปภาพ (Image)
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn ${activityForm.type === "video" ? "btn-primary" : "btn-secondary"}`}
+                      style={{ justifyContent: "center" }}
+                      onClick={() => setActivityForm(prev => ({ ...prev, type: "video" }))}
+                    >
+                      <DynamicIcon name="Video" size={16} /> วิดีโอ / คลิป (Video)
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. เลือกหรืออัปโหลดไฟล์ */}
+                <div className="form-group">
+                  <label>
+                    {activityForm.type === "video" 
+                      ? "อัปโหลดไฟล์วิดีโอ (MP4, WebM ขนาดไม่เกิน 850KB) หรือใส่ลิงก์ URL ด้านล่าง *" 
+                      : "เลือกไฟล์รูปภาพ (PNG, JPG, WebP) *"}
+                  </label>
+                  <div style={{ display: "flex", gap: "1rem", alignItems: "center", marginBottom: "0.85rem" }}>
+                    <div style={{ width: "96px", height: "70px", borderRadius: "8px", overflow: "hidden", background: "#000", border: "1px dashed rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {activityForm.url ? (
+                        activityForm.type === "video" ? (
+                          activityForm.thumbnailUrl ? (
+                            <img src={activityForm.thumbnailUrl} alt="Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <video src={activityForm.url} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          )
+                        ) : (
+                          <img src={activityForm.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        )
                       ) : (
-                        <DynamicIcon name="Award" size={24} style={{ color: "var(--text-muted)" }} />
+                        <DynamicIcon name={activityForm.type === "video" ? "Video" : "Sparkles"} size={26} style={{ color: "var(--text-muted)" }} />
                       )}
                     </div>
                     <div style={{ flex: 1 }}>
                       <input 
                         type="file" 
-                        accept="image/*" 
-                        id="cert-file-input" 
+                        accept={activityForm.type === "video" ? "video/*,image/*" : "image/*"} 
+                        id="activity-file-input" 
                         style={{ display: "none" }}
-                        onChange={handleUploadCertImage} 
+                        onChange={handleUploadActivityMedia} 
                       />
                       <button 
                         type="button" 
                         className="btn btn-secondary" 
-                        onClick={() => document.getElementById("cert-file-input").click()}
+                        onClick={() => document.getElementById("activity-file-input").click()}
                       >
-                        <DynamicIcon name="UploadCloud" size={16} /> อัปโหลดรูปภาพ
+                        <DynamicIcon name="UploadCloud" size={16} /> {activityForm.type === "video" ? "อัปโหลดไฟล์วิดีโอ/ภาพ" : "อัปโหลดรูปภาพ"}
                       </button>
                     </div>
                   </div>
 
                   <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.25rem", display: "block" }}>
-                    หรือใส่ลิงก์ URL รูปภาพโดยตรง:
+                    {activityForm.type === "video" 
+                      ? "หรือใส่ลิงก์ URL วิดีโอ (รองรับ YouTube, Vimeo หรือ Direct MP4 URL):" 
+                      : "หรือใส่ลิงก์ URL รูปภาพโดยตรง:"}
                   </label>
                   <input 
                     type="url" 
                     className="form-control" 
-                    placeholder="https://..." 
-                    value={certImageUrl} 
-                    onChange={e => setCertImageUrl(e.target.value)} 
+                    placeholder={activityForm.type === "video" ? "https://www.youtube.com/watch?v=... หรือ https://...mp4" : "https://..."} 
+                    value={activityForm.url} 
+                    onChange={e => {
+                      const val = e.target.value;
+                      const isVid = isVideoMedia(val);
+                      setActivityForm(prev => ({ 
+                        ...prev, 
+                        url: val,
+                        type: isVid ? "video" : prev.type
+                      }));
+                    }} 
                   />
                 </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowCertModal(false)}>
-                  ยกเลิก
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  <DynamicIcon name="Check" size={16} /> บันทึกรูปภาพ
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* Modal: เพิ่มรูปรางวัล (เพิ่มแค่รูปเท่านั้น ตามข้อ 3) */}
-      {showAwardModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: "480px" }}>
-            <div className="modal-header">
-              <h3>เพิ่มรูปภาพรางวัล (Awards)</h3>
-              <button type="button" className="btn-icon" onClick={() => setShowAwardModal(false)}>
-                <DynamicIcon name="X" size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleSaveAward}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>เลือกไฟล์รูปภาพรางวัล *</label>
-                  <div style={{ display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1rem" }}>
-                    <div style={{ width: "90px", height: "65px", borderRadius: "8px", overflow: "hidden", background: "#000", border: "1px dashed rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {awardImageUrl ? (
-                        <img src={awardImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <DynamicIcon name="Trophy" size={24} style={{ color: "var(--text-muted)" }} />
-                      )}
-                    </div>
-                    <div style={{ flex: 1 }}>
+                {/* 3. สำหรับวิดีโอ: สามารถใส่รูปภาพปก (Thumbnail) ได้ */}
+                {activityForm.type === "video" && (
+                  <div className="form-group" style={{ marginTop: "1rem", paddingTop: "0.85rem", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                    <label style={{ fontSize: "0.85rem" }}>รูปภาพหน้าปกวิดีโอ (Thumbnail - ตัวเลือกเสริม)</label>
+                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
                       <input 
                         type="file" 
                         accept="image/*" 
-                        id="award-file-input" 
+                        id="activity-thumb-input" 
                         style={{ display: "none" }}
-                        onChange={handleUploadAwardImage} 
+                        onChange={handleUploadActivityThumbnail} 
+                      />
+                      <input 
+                        type="url" 
+                        className="form-control" 
+                        placeholder="https://... (URL รูปภาพปก)" 
+                        value={activityForm.thumbnailUrl} 
+                        onChange={e => setActivityForm(prev => ({ ...prev, thumbnailUrl: e.target.value }))} 
+                        style={{ flex: 1 }}
                       />
                       <button 
                         type="button" 
                         className="btn btn-secondary" 
-                        onClick={() => document.getElementById("award-file-input").click()}
+                        onClick={() => document.getElementById("activity-thumb-input").click()}
+                        title="อัปโหลดรูปภาพหน้าปก"
                       >
-                        <DynamicIcon name="UploadCloud" size={16} /> อัปโหลดรูปภาพ
+                        <DynamicIcon name="Image" size={16} /> อัปโหลดปก
                       </button>
                     </div>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
+                      * หากเป็นคลิป YouTube ระบบจะดึงรูปภาพปกให้อัตโนมัติ
+                    </span>
                   </div>
-
-                  <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.25rem", display: "block" }}>
-                    หรือใส่ลิงก์ URL รูปภาพโดยตรง:
-                  </label>
-                  <input 
-                    type="url" 
-                    className="form-control" 
-                    placeholder="https://..." 
-                    value={awardImageUrl} 
-                    onChange={e => setAwardImageUrl(e.target.value)} 
-                  />
-                </div>
+                )}
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAwardModal(false)}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowActivityModal(false)}>
                   ยกเลิก
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  <DynamicIcon name="Check" size={16} /> บันทึกรูปภาพ
+                  <DynamicIcon name="Check" size={16} /> บันทึก Activities
                 </button>
               </div>
             </form>
